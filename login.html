@@ -1,0 +1,151 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Controle de Armários</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --text:#e8eefc;
+      --muted:#a9b7d6;
+      --line:rgba(255,255,255,.10);
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      margin: 0; padding: 0;
+      background: radial-gradient(1200px 600px at 10% -20%, rgba(96,165,250,.22), transparent 55%), var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      display: flex; justify-content: center; align-items: center;
+      height: 100vh;
+    }
+    .login-container {
+      background: rgba(16,26,46,.75);
+      backdrop-filter: blur(12px);
+      padding: 40px; border-radius: 16px;
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      text-align: center;
+      width: 100%; max-width: 350px;
+    }
+    .logo { font-size: 42px; margin-bottom: 10px; }
+    h2 { margin: 0 0 5px 0; font-weight: 700; }
+    p { color: var(--muted); font-size: 14px; margin-bottom: 25px; }
+    
+    select, input[type="password"] {
+      width: 100%; padding: 14px; border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(16,26,46,.6); color: var(--text);
+      font-size: 16px; margin-bottom: 20px; outline: none; 
+      box-sizing: border-box;
+    }
+    select { cursor: pointer; }
+    input[type="password"] { cursor: text; }
+    input[type="password"]::placeholder { color: var(--muted); }
+    select option { background: var(--bg); color: var(--text); }
+    
+    button {
+      width: 100%; padding: 14px;
+      background: linear-gradient(135deg, rgba(96,165,250,.8), rgba(52,211,153,.8));
+      color: #000; font-weight: bold; font-size: 16px;
+      border: none; border-radius: 12px;
+      cursor: pointer; transition: transform 0.1s;
+    }
+    button:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="logo">🔐</div>
+    <h2>Bem-vindo</h2>
+    <p>Selecione a loja e digite a senha</p>
+    
+    <select id="lojaSelect">
+      <option value="" disabled selected>-- Selecione a Loja --</option>
+      <option value="001-AFL">001-AFL</option>
+      <option value="002-APIACAS">002-APIACAS</option>
+      <option value="003-PAR">003-PAR</option>
+      <option value="004-SORBH">004-SORBH</option>
+      <option value="005-LRVCEN">005-LRVCEN</option>
+      <option value="006-MUTUM">006-MUTUM</option>
+      <option value="008-LRVVEN">008-LRVVEN</option>
+      <option value="009-TAPURAH">009-TAPURAH</option>
+      <option value="010-GTA">010-GTA</option>
+      <option value="011-PEIXOTO">011-PEIXOTO</option>
+      <option value="012-SORBR">012-SORBR</option>
+      <option value="013-DNSOR">013-DNSOR</option>
+      <option value="014-CD">014-CD</option>
+      <option value="015-TNN">015-TNN</option>
+      <option value="016-DNMUTUM">016-DNMUTUM</option>
+      <option value="018-SOR-RDS">018-SOR-RDS</option>
+      <option value="502-CA-GTA-C">502-CA-GTA-C</option>
+      <option value="503-CA-SNP-J">503-CA-SNP-J</option>
+      <option value="505-CA-SORRI">505-CA-SORRI</option>
+      <option value="506-CA-SNP-A">506-CA-SNP-A</option>
+      <option value="508-CA-MTP-I">508-CA-MTP-I</option>
+    </select>
+
+    <input type="password" id="senhaLoja" placeholder="Senha de acesso" />
+
+    <button onclick="fazerLogin()">Acessar Loja 🚀</button>
+  </div>
+
+  <script>
+    // Removemos aquele código antigo de redirecionamento automático
+    // para garantir que a tela de login sempre fique aberta ao entrar no link.
+
+    // Dicionário de senhas
+    const senhasLojas = {
+      "001-AFL": "Delmoro001",
+      "002-APIACAS": "Delmoro002",
+      "003-PAR": "Delmoro003",
+      "004-SORBH": "Delmoro004",
+      "005-LRVCEN": "Delmoro005",
+      "006-MUTUM": "Delmoro006",
+      "008-LRVVEN": "Delmoro008",
+      "009-TAPURAH": "Delmoro009",
+      "010-GTA": "Delmoro010",
+      "011-PEIXOTO": "Delmoro011",
+      "012-SORBR": "Delmoro012",
+      "013-DNSOR": "Delmoro013",
+      "014-CD": "Delmoro014",
+      "015-TNN": "Delmoro015",
+      "016-DNMUTUM": "Delmoro016",
+      "018-SOR-RDS": "Delmoro018",
+      "502-CA-GTA-C": "Delmoro2026",
+      "503-CA-SNP-J": "Delmoro2026",
+      "505-CA-SORRI": "Delmoro2026",
+      "506-CA-SNP-A": "Delmoro2026",
+      "508-CA-MTP-I": "Delmoro2026"
+    };
+
+    function fazerLogin() {
+      const loja = document.getElementById('lojaSelect').value;
+      const senha = document.getElementById('senhaLoja').value;
+      
+      if (!loja) {
+        alert("Por favor, selecione uma loja primeiro!");
+        return;
+      }
+
+      if (senhasLojas[loja] !== senha) {
+        alert("Senha incorreta para a loja selecionada!");
+        return;
+      }
+      
+      // Salva a loja na memória (para o app.js ler e saber a gaveta do Firebase)
+      localStorage.setItem('loja_armarios', loja);
+      
+      // Salva um sinalizador indicando que a pessoa colocou a senha com sucesso
+      // (Isso impede que o index.html jogue o usuário de volta)
+      sessionStorage.setItem('sessao_ativa', 'true');
+      
+      // Redireciona para o sistema
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>

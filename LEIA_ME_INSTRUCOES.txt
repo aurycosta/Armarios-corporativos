@@ -1,0 +1,17 @@
+﻿===================================================
+ATUALIZAÇÃO SEGURA - CONTROLE DE ARMÁRIOS
+===================================================
+
+Como combinado, para NÃO APAGAR o seu arquivo 'app.js' que 
+contém o seu banco de dados de funcionários gigantesco, 
+este ZIP contém *apenas* os arquivos de layout que 
+receberam a melhoria da aba "Sem Armário" e Impressão.
+
+PASSO A PASSO:
+1. Extraia este ZIP.
+2. Copie o 'index.html' e o 'styles.css' que estão aqui.
+3. Cole dentro da SUA pasta original do sistema.
+4. Quando o Windows perguntar se deseja substituir, diga SIM.
+
+Isso vai atualizar o sistema com a função nova e MANTER 
+o seu 'app.js' intacto e perfeito.
