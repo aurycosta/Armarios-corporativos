@@ -8,7 +8,6 @@ import {
   getDatabase, ref, onValue, set, update, remove, get, child, runTransaction, push, query, limitToLast
 } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-database.js";
 
-// Atualizado para o banco armarios-corporativo conforme seu pedido inicial
 const firebaseConfig = {
   apiKey: "AIzaSyAVp9c-unMG6LxVTOS0yX5G5KavXAqtyx8",
   authDomain: "armarios-corporativo.firebaseapp.com",
@@ -24,8 +23,10 @@ const app = initializeApp(firebaseConfig);
 try { getAnalytics(app); } catch {}
 const db = getDatabase(app);
 
-// === SEGREDO PARA MULTI-LOJAS ===
-const lojaAtual = localStorage.getItem('loja_armarios') || "005-LRVCEN";
+// === SEGREDO PARA MULTI-LOJAS E QR CODE ===
+const urlParamsApp = new URLSearchParams(window.location.search);
+// Puxa a loja do QR code ou, se não tiver QR, puxa do Login
+const lojaAtual = urlParamsApp.get('loja') || localStorage.getItem('loja_armarios') || "005-LRVCEN";
 const basePath = "lojas/" + lojaAtual;
 
 // ===== Helpers/UI =====
@@ -43,7 +44,7 @@ const panels = {
 const modal = el("modal");
 const toast = el("toast");
 const connStatus = el("connStatus");
-// ===== Gate Admin (UI-only) =====
+
 const adminGate = el("adminGate");
 const adminPinInput = el("adminPinInput");
 const btnAdminEnter = el("btnAdminEnter");
@@ -63,9 +64,8 @@ function hasAdminSession(){
 }
 
 function lockAdminIfNeeded(){
-  // Se não estiver em modo QR e tiver PIN definido, exige sessão admin
   if(isClaimMode()) return;
-  const pin = (state.adminPin || "").trim();
+  const pin = (window.state && window.state.adminPin) ? String(window.state.adminPin).trim() : "";
   if(pin && !hasAdminSession()){
     document.documentElement.classList.add("admin-locked");
   }else{
@@ -74,7 +74,7 @@ function lockAdminIfNeeded(){
 }
 
 btnAdminEnter?.addEventListener("click", ()=>{
-  const pin = (state.adminPin || "").trim();
+  const pin = (window.state && window.state.adminPin) ? String(window.state.adminPin).trim() : "";
   if(!pin){
     adminGateMsg.textContent = "Nenhum PIN definido em Config.";
     return;
@@ -97,7 +97,6 @@ btnAdminLogout?.addEventListener("click", ()=>{
   lockAdminIfNeeded();
 });
 
-// Config: salvar/remover PIN no Firebase
 btnSaveAdminPin?.addEventListener("click", async ()=>{
   try{
     const v = String(adminPinConfig.value || "").trim();
@@ -121,15 +120,15 @@ btnClearAdminPin?.addEventListener("click", async ()=>{
   }
 });
 
-
-let state = {
+window.state = {
   totalLockers: 300,
-  defaultSplit: 150, // 1..X = BAIXO, X+1..total = CIMA (padrão)
-  lockerPositions: {}, // override por número: { "42": "CIMA" }
-  lockerKeys: {}, // override por número: { "42": 2 } (total de chaves)
-  lockerMaint: {}, // { "42": {status:"MANUTENCAO"|"OK", note:"", updatedAt:...} }
-  employees: [], // [{cadastro, nome, admissao, cargo, armario, chaveEntregueEm}]
+  defaultSplit: 150, 
+  lockerPositions: {}, 
+  lockerKeys: {}, 
+  lockerMaint: {}, 
+  employees: [], 
 };
+const state = window.state;
 
 function showToast(msg){
   toast.textContent = msg;
@@ -148,7 +147,6 @@ function normalize(str){
 
 function formatDateBR(iso){
   if(!iso) return "";
-  // aceita 'YYYY-MM-DD'
   const [y,m,d] = String(iso).split("-");
   if(!y||!m||!d) return String(iso);
   return `${d}/${m}/${y}`;
@@ -157,7 +155,6 @@ function formatDateBR(iso){
 function parseLockerFilter(input){
   const s = normalize(input);
   if(!s) return { type: "all" };
-  // "1-50"
   const m = s.match(/^(\d+)\s*-\s*(\d+)$/);
   if(m){
     let a = parseInt(m[1],10), b = parseInt(m[2],10);
@@ -166,13 +163,11 @@ function parseLockerFilter(input){
       return { type:"range", a, b };
     }
   }
-  // "2xx"
   const m2 = s.match(/^(\d)x{2}$/);
   if(m2){
     const p = parseInt(m2[1],10);
     if(Number.isFinite(p)) return { type:"prefix", p };
   }
-  // número exato
   const n = parseInt(s,10);
   if(Number.isFinite(n)) return { type:"one", n };
   return { type:"text", s };
@@ -186,8 +181,6 @@ function lockerPosition(n){
   return n <= split ? "BAIXO" : "CIMA";
 }
 
-// ===== Chaves (cópias) por armário =====
-
 function maintInfoForLocker(n){
   const v = state.lockerMaint ? (state.lockerMaint[String(n)] || state.lockerMaint[n]) : null;
   if(!v) return { status:"OK", note:"" };
@@ -198,12 +191,10 @@ function maintInfoForLocker(n){
 function totalKeysForLocker(n){
   const v = state.lockerKeys?.[String(n)];
   const num = Number(v);
-  return Number.isFinite(num) && num > 0 ? Math.floor(num) : 1; // padrão: 1 chave
+  return Number.isFinite(num) && num > 0 ? Math.floor(num) : 1; 
 }
 
 function keysInUseForLocker(n, excludeCadastro){
-  // Cada armário é único por colaborador, mas a chave pode ou não ter sido entregue.
-  // Conta colaboradores com este armário e chaveEntregueEm preenchido.
   let count = 0;
   for(const e of state.employees){
     if(excludeCadastro && String(e.cadastro) === String(excludeCadastro)) continue;
@@ -223,7 +214,6 @@ async function saveLockerKeys(num, total){
 }
 
 async function logHistoricoChave({ tipo, armario, cadastro, nome, chaveEntregueEm, obs, totalAntes, totalDepois, deltaTotal }){
-  // não falha o fluxo principal se o log falhar
   try{
     const payload = {
       ts: Date.now(),
@@ -242,7 +232,6 @@ async function logHistoricoChave({ tipo, armario, cadastro, nome, chaveEntregueE
     console.warn("Falha ao registrar histórico:", err);
   }
 }
-
 
 function tagPos(pos){
   const span = document.createElement("span");
@@ -264,44 +253,9 @@ function updateConnBadge(connected){
   }
 }
 
-// ===== Firebase sync =====
-let _seeded = false;
-
-function seedIfEmpty(snapshotVal){
-  // Se não existir nenhum colaborador no banco, joga o INITIAL_EMPLOYEES uma vez
-  if(_seeded) return;
-  _seeded = true;
-
-  if(snapshotVal && Object.keys(snapshotVal).length) return;
-
-  const updates = {};
-  for(const e of INITIAL_EMPLOYEES){
-    const cadastro = String(e.cadastro).trim();
-    if(!cadastro) continue;
-    updates[`employees/${cadastro}`] = {
-      cadastro,
-      nome: e.nome ?? "",
-      admissao: e.admissao ?? "",
-      cargo: e.cargo ?? "",
-      armario: e.armario ?? null,
-      chaveEntregueEm: e.chaveEntregueEm ?? null,
-    };
-  }
-  // total/defaultSplit só se não existirem
-  updates["config/totalLockers"] = 300;
-  updates["config/defaultSplit"] = 150;
-  
-  // Envia as atualizações salvando dentro da pasta da loja específica
-  return update(ref(db, basePath), updates)
-    .then(()=>showToast("Base inicial enviada para o Firebase."))
-    .catch((err)=>showToast("Não consegui enviar base inicial: " + (err?.message || err)));
-}
-
 function startRealtime(){
-  // status de conexão (Mantém na raiz para pegar status global)
   onValue(ref(db, ".info/connected"), (snap)=> updateConnBadge(!!snap.val()));
 
-  // config
   onValue(ref(db, basePath + "/config"), (snap)=>{
     const v = snap.val() || {};
     const total = Number(v.totalLockers);
@@ -310,34 +264,29 @@ function startRealtime(){
     const split = Number(v.defaultSplit ?? v.divisao);
     if(Number.isFinite(split) && split>=0) state.defaultSplit = Math.floor(split);
 
-    const padrao = (v.padraoAte === "CIMA") ? "CIMA" : "BAIXO";
-    state.defaultPadraoAte = padrao;
+    state.adminPin = v.adminPin || "";
+    lockAdminIfNeeded();
 
-    el("totalInput").value = state.totalLockers;
-    el("splitInput").value = state.defaultSplit;
-    if(el("padraoAteInput")) el("padraoAteInput").value = state.defaultPadraoAte;
+    if(el("totalInput")) el("totalInput").value = state.totalLockers;
+    if(el("splitInput")) el("splitInput").value = state.defaultSplit;
     renderAll();
-    // se veio via QR (?claim=1&locker=...), abre o modal depois que os colaboradores carregarem
+    
     if(pendingClaimLocker != null){
       openClaimOnly(pendingClaimLocker);
       pendingClaimLocker = null;
     }
   });
 
-  // locker positions override
   onValue(ref(db, basePath + "/lockerPositions"), (snap)=>{
     state.lockerPositions = snap.val() || {};
     renderAll();
   });
 
-  // locker keys (total de cópias por armário)
   onValue(ref(db, basePath + "/lockerKeys"), (snap)=>{
     state.lockerKeys = snap.val() || {};
     renderAll();
   });
 
-
-  // histórico de chaves (últimos 200) - APONTADO PARA A LOJA
   onValue(query(ref(db, basePath + "/historicoChaves"), limitToLast(200)), (snap)=>{
     const v = snap.val() || {};
     const arr = [];
@@ -361,57 +310,47 @@ function startRealtime(){
     state.historicoChaves = arr;
     renderHistory();
   }, (err)=>{
-    // não trava o app se der erro no histórico
     console.warn("Erro Firebase (historicoChaves):", err);
   });
 
-// ===== LER COLABORADORES DA LOJA LOGADA =====
-onValue(ref(db, basePath + "/employees"), (snap) => {
-  const v = snap.val();
-  
-  // Limpa o array atual para não duplicar
-  const arr = [];
-  
-  // Verifica se existem dados
-  if (v) {
-    // Itera sobre cada cadastro encontrado no Firebase
-    Object.keys(v).forEach(key => {
-      const e = v[key];
-      
-      // Filtro de segurança: garante que é um objeto de colaborador e não metadados
-      if (typeof e === 'object' && e !== null && e.cadastro) {
-        arr.push({
-          cadastro: String(e.cadastro),
-          nome: e.nome || "",
-          admissao: e.admissao || "",
-          cargo: e.cargo || "",
-          armario: Number.isFinite(e.armario) ? e.armario : null,
-          chaveEntregueEm: e.chaveEntregueEm || null,
-        });
-      }
-    });
-  }
-
-  // Sanitização: garante que armários inválidos fiquem null
-  state.employees = arr.map(e => {
-    if (e.armario != null && (e.armario < 1 || e.armario > state.totalLockers)) {
-      e.armario = null;
+  // LER COLABORADORES DA LOJA LOGADA
+  onValue(ref(db, basePath + "/employees"), (snap) => {
+    const v = snap.val();
+    const arr = [];
+    
+    if (v && typeof v === 'object') {
+      Object.keys(v).forEach(key => {
+        const e = v[key];
+        if (e && typeof e === 'object') {
+          arr.push({
+            cadastro: String(e.cadastro || key),
+            nome: e.nome || "Sem nome",
+            admissao: e.admissao || "",
+            cargo: e.cargo || "",
+            armario: (e.armario !== undefined && e.armario !== null && e.armario !== "") ? Number(e.armario) : null,
+            chaveEntregueEm: e.chaveEntregueEm || null,
+          });
+        }
+      });
     }
-    return e;
+
+    state.employees = arr.map(e => {
+      if (e.armario != null && (e.armario < 1 || e.armario > state.totalLockers)) {
+        e.armario = null;
+      }
+      return e;
+    });
+
+    if (typeof refreshKeyEvtEmpOptions === "function") refreshKeyEvtEmpOptions();
+    if (typeof renderAll === "function") renderAll();
+    
+    if (document.documentElement.classList.contains("claim-mode")) {
+      refreshClaimOnlyUI(); 
+    }
+  }, (err) => {
+    console.error("Erro fatal no Firebase:", err);
+    showToast("Erro ao carregar dados: " + err.message);
   });
-
-  // Debug: se não aparecer no painel, olhe o Console (F12) e veja se esse número está correto
-  console.log("Total de colaboradores carregados:", state.employees.length);
-
-  // Atualiza a interface
-  refreshKeyEvtEmpOptions();
-  renderAll();
-  
-}, (err) => {
-  showToast("Erro ao carregar dados do Firebase: " + err.message);
-  console.error(err);
-});
-
 }
 
 async function claimLocker(lockerNumber, cadastro){
@@ -420,7 +359,7 @@ async function claimLocker(lockerNumber, cadastro){
   const r = ref(db, `${basePath}/lockerIndex/${n}`);
   const res = await runTransaction(r, (current)=>{
     if(current === null || current === cadastro) return cadastro;
-    return; // aborta
+    return; 
   });
   if(!res.committed) throw new Error(`Armário ${n} já está em uso.`);
 }
@@ -438,10 +377,8 @@ async function releaseLocker(lockerNumber, cadastro){
 async function writeEmployee(emp, prevLocker){
   const cadastro = String(emp.cadastro).trim();
   if(!cadastro) throw new Error("Matrícula inválida.");
-
   const newLocker = emp.armario ?? null;
 
-  // trava de armário
   if(prevLocker != null && prevLocker !== newLocker){
     await releaseLocker(prevLocker, cadastro);
   }
@@ -481,7 +418,6 @@ async function saveLockerPosition(num, pos){
   await set(ref(db, `${basePath}/lockerPositions/${num}`), pos);
 }
 
-// ===== Availability =====
 function getUsedLockers(){
   const used = new Set();
   for(const e of state.employees){
@@ -502,11 +438,10 @@ function getFreeLockers(){
 function updateStats(){
   const used = getUsedLockers().size;
   const free = state.totalLockers - used;
-  el("totalLockers").textContent = String(state.totalLockers);
-  el("usedLockers").textContent = String(used);
-  el("freeLockers").textContent = String(free);
+  if(el("totalLockers")) el("totalLockers").textContent = String(state.totalLockers);
+  if(el("usedLockers")) el("usedLockers").textContent = String(used);
+  if(el("freeLockers")) el("freeLockers").textContent = String(free);
 
-  // alerta compacto no topo: armários sem chave reserva (disponível = 0)
   const zeroPill = document.getElementById("zeroKeysPill");
   const zeroCountEl = document.getElementById("zeroKeysCount");
   if(zeroPill && zeroCountEl){
@@ -517,7 +452,7 @@ function updateStats(){
     }
     zeroCountEl.textContent = String(zeroCount);
     zeroPill.classList.toggle("pulse", zeroCount > 0);
-    zeroPill.style.display = "";
+    zeroPill.style.display = zeroCount > 0 ? "" : "none";
     zeroPill.title = zeroCount
       ? `🔔 ${zeroCount} armário(s) sem chave reserva (disponível = 0).`
       : "✅ Todos os armários têm ao menos 1 chave reserva disponível.";
@@ -529,13 +464,12 @@ function switchTab(name){
     t.classList.toggle("active", t.dataset.tab === name);
   }
   for(const [k,p] of Object.entries(panels)){
-    p.classList.toggle("active", k === name);
+    if(p) p.classList.toggle("active", k === name);
   }
 }
 
 tabs.forEach(t => t.addEventListener("click", ()=> { if(document.body.classList.contains("claim-mode")) return; switchTab(t.dataset.tab); }));
 
-// ===== QR / Autoatendimento (por armário) =====
 const claimModal = el("claimModal");
 const claimOnly = el("claimOnly");
 const claimOnlyLocker = el("claimOnlyLocker");
@@ -561,27 +495,28 @@ const qrGrid = el("qrGrid");
 const qrHint = el("qrHint");
 const qrBaseUrl = el("qrBaseUrl");
 
-
 let pendingClaimLocker = null;
 
+// GERAÇÃO DE URLS COM A LOJA EMBUTIDA
 function buildLockerClaimUrl(n){
-  // Preferência de URL pública (para QR funcionar fora do PC)
   const base = (state.publicBaseUrl || localStorage.getItem("publicBaseUrl") || "").trim();
   try{
     if(base){
       const u = new URL(base);
       u.searchParams.set("claim","1");
       u.searchParams.set("locker", String(n));
+      u.searchParams.set("loja", lojaAtual); 
       return u.toString();
     }
     const u = new URL(window.location.href);
     u.searchParams.set("claim","1");
     u.searchParams.set("locker", String(n));
+    u.searchParams.set("loja", lojaAtual); 
     u.hash = "";
     return u.toString();
   }catch{
     const originPath = `${location.origin}${location.pathname}`;
-    return `${originPath}?claim=1&locker=${n}`;
+    return `${originPath}?claim=1&locker=${n}&loja=${lojaAtual}`; 
   }
 }
 
@@ -607,7 +542,6 @@ function refreshClaimUI(){
   claimConfirm.disabled = !(emp && claimAgree.checked);
 }
 
-
 function setClaimMode(on){
   document.documentElement.classList.toggle("claim-mode", !!on);
   document.body.classList.toggle("claim-mode", !!on);
@@ -617,6 +551,7 @@ function openClaimOnly(lockerNumber){
   const n = Number(lockerNumber);
   if(!Number.isFinite(n)) return;
   if(claimOnlyLocker) claimOnlyLocker.value = String(n);
+  if(el("claimOnlyLockerDisplay")) el("claimOnlyLockerDisplay").textContent = String(n);
   if(claimOnlyCadastro) claimOnlyCadastro.value = "";
   if(claimOnlyNome) claimOnlyNome.value = "";
   if(claimOnlyAgree) claimOnlyAgree.checked = false;
@@ -625,13 +560,18 @@ function openClaimOnly(lockerNumber){
   if(claimOnlyCadastro) setTimeout(()=>claimOnlyCadastro.focus(), 50);
 }
 
-
 function refreshClaimOnlyUI(){
   const cad = String(claimOnlyCadastro?.value ?? "").trim();
   const emp = state.employees.find(e => String(e.cadastro) === cad);
-  if(claimOnlyNome) claimOnlyNome.value = emp ? emp.nome : "";
-  if(claimOnlyAgree) claimOnlyAgree.checked = true;
-  if(claimOnlyConfirm) claimOnlyConfirm.disabled = !emp;
+  if(claimOnlyNome) claimOnlyNome.value = emp ? emp.nome : "Matrícula não encontrada...";
+  
+  if(claimOnlyConfirm) {
+     if(emp && claimOnlyAgree.checked){
+         claimOnlyConfirm.disabled = false;
+     } else {
+         claimOnlyConfirm.disabled = true;
+     }
+  }
 }
 
 claimOnlyCadastro?.addEventListener("input", refreshClaimOnlyUI);
@@ -640,11 +580,17 @@ claimOnlyAgree?.addEventListener("change", refreshClaimOnlyUI);
 claimOnlyConfirm?.addEventListener("click", async ()=>{
   try{
     claimOnlyConfirm.disabled = true;
-    if(claimOnlyMsg) claimOnlyMsg.textContent = "Confirmando…";
+    if(claimOnlyMsg) claimOnlyMsg.textContent = "Confirmando… aguarde.";
     await selfAssignLocker(claimOnlyCadastro.value, claimOnlyLocker.value);
-    if(claimOnlyMsg) claimOnlyMsg.textContent = "✅ Confirmado. Você já pode fechar esta página.";
+    if(claimOnlyMsg) {
+      claimOnlyMsg.style.color = "var(--ok)";
+      claimOnlyMsg.textContent = "✅ Confirmado! Você já pode fechar esta página.";
+    }
   }catch(err){
-    if(claimOnlyMsg) claimOnlyMsg.textContent = err?.message ?? "Não foi possível confirmar.";
+    if(claimOnlyMsg) {
+       claimOnlyMsg.style.color = "var(--danger)";
+       claimOnlyMsg.textContent = err?.message ?? "Não foi possível confirmar.";
+    }
     claimOnlyConfirm.disabled = false;
   }
 });
@@ -660,11 +606,10 @@ async function selfAssignLocker(cadastro, lockerNumber){
   if(!Number.isFinite(locker) || locker < 1) throw new Error("Armário inválido.");
 
   const current = state.employees.find(e => String(e.cadastro) === cad);
-  if(!current) throw new Error("Matrícula não encontrada.");
+  if(!current) throw new Error("Matrícula não encontrada na lista.");
 
   const prevLocker = current.armario ?? null;
 
-  // reaproveita as rotinas já existentes (índice + transações)
   await writeEmployee({
     cadastro: current.cadastro,
     nome: current.nome ?? "",
@@ -674,7 +619,6 @@ async function selfAssignLocker(cadastro, lockerNumber){
     chaveEntregueEm: current.chaveEntregueEm ?? null,
   }, prevLocker);
 
-  // registra no mesmo histórico (não muda estrutura)
   await logHistoricoChave({
     tipo: "AUTO_ARMARIO",
     armario: locker,
@@ -693,10 +637,10 @@ claimForm?.addEventListener("submit", async (e)=>{
     await selfAssignLocker(claimCadastro.value, claimLockerInput.value);
     claimModal.close();
 
-    // limpa a URL (tira claim/locker) para não reabrir ao recarregar
     const u = new URL(window.location.href);
     u.searchParams.delete("claim");
     u.searchParams.delete("locker");
+    u.searchParams.delete("loja");
     window.history.replaceState({}, "", u.toString());
   }catch(err){
     claimConfirm.disabled = false;
@@ -705,7 +649,6 @@ claimForm?.addEventListener("submit", async (e)=>{
 });
 
 if(qrBaseUrl){
-  // carrega último valor salvo
   qrBaseUrl.value = localStorage.getItem("publicBaseUrl") || state.publicBaseUrl || "";
   qrBaseUrl.addEventListener("change", ()=>{
     const v = (qrBaseUrl.value || "").trim();
@@ -716,7 +659,6 @@ if(qrBaseUrl){
 
 btnGenQR?.addEventListener("click", ()=>{
   const total = Number(state.totalLockers) || 300;
-  // se informado, usa como base (e salva no localStorage)
   if(qrBaseUrl){
     const v = (qrBaseUrl.value || '').trim();
     if(v) localStorage.setItem('publicBaseUrl', v);
@@ -729,7 +671,7 @@ btnGenQR?.addEventListener("click", ()=>{
   qrGrid.innerHTML = "";
   const count = to - from + 1;
   const baseUsed = (qrBaseUrl?.value || state.publicBaseUrl || localStorage.getItem('publicBaseUrl') || '').trim();
-  qrHint.textContent = `Gerando ${count} QR(s) — Total configurado: ${total}` + (baseUsed ? ` • Base: ${baseUsed}` : ' • Base: (URL atual)');
+  qrHint.textContent = `Gerando ${count} QR(s) — Loja atual: ${lojaAtual}`;
 
   for(let n=from; n<=to; n++){
     const url = buildLockerClaimUrl(n);
@@ -739,7 +681,7 @@ btnGenQR?.addEventListener("click", ()=>{
 
     const top = document.createElement("div");
     top.className = "qr-top";
-    top.innerHTML = `<div class="qr-num">Armário ${n}</div><div class="muted small">QR</div>`;
+    top.innerHTML = `<div class="qr-num">Armário ${n}</div><div class="muted small">${lojaAtual.split('-')[1] || lojaAtual}</div>`;
 
     const box = document.createElement("div");
     box.id = `qr_${n}`;
@@ -753,7 +695,6 @@ btnGenQR?.addEventListener("click", ()=>{
     item.appendChild(link);
     qrGrid.appendChild(item);
 
-    // QRCode lib (global)
     if(window.QRCode){
       new window.QRCode(box, { text: url, width: 128, height: 128, correctLevel: window.QRCode.CorrectLevel.M });
     }else{
@@ -770,7 +711,6 @@ btnPrintQR?.addEventListener("click", ()=>{
   setTimeout(()=>window.print(), 250);
 });
 
-// lê URL (?claim=1&locker=82)
 (function initClaimFromUrl(){
   const params = new URLSearchParams(window.location.search);
   const claim = params.get("claim");
@@ -778,16 +718,13 @@ btnPrintQR?.addEventListener("click", ()=>{
   if(String(claim) === "1" && locker){
     pendingClaimLocker = Number(locker);
     setClaimMode(true);
-    // se já carregou, abre imediatamente
     if(state.employees?.length){
       openClaimOnly(pendingClaimLocker);
       pendingClaimLocker = null;
     }
   }
 })();
-// aplica gate admin após identificar modo
 lockAdminIfNeeded();
-
 
 function tdText(text){
   const td = document.createElement("td");
@@ -795,10 +732,10 @@ function tdText(text){
   return td;
 }
 
-// ===== Render =====
 function renderEmployees(){
-  const q = normalize(el("searchInput").value);
+  const q = normalize(el("searchInput")?.value);
   const tbody = el("tbody");
+  if(!tbody) return;
   tbody.innerHTML = "";
 
   const rows = state.employees
@@ -818,7 +755,6 @@ function renderEmployees(){
     tr.appendChild(tdText(formatDateBR(e.admissao)));
     tr.appendChild(tdText(e.cargo));
 
-    // Armário (click to edit)
     const tdArm = document.createElement("td");
     const btn = document.createElement("button");
     btn.className = "cell-btn";
@@ -828,7 +764,6 @@ function renderEmployees(){
     tdArm.appendChild(btn);
     tr.appendChild(tdArm);
 
-    // Posição
     const tdPos = document.createElement("td");
     if(e.armario){
       tdPos.appendChild(tagPos(lockerPosition(e.armario)));
@@ -839,7 +774,6 @@ function renderEmployees(){
 
     tr.appendChild(tdText(formatDateBR(e.chaveEntregueEm)));
 
-    // actions
     const tdA = document.createElement("td");
     const del = document.createElement("button");
     del.className = "btn btn-danger btn-sm";
@@ -861,16 +795,14 @@ function renderEmployees(){
 }
 
 function renderLockers(){
-  const filter = parseLockerFilter(el("lockerFilter").value);
-  const mode = el("lockerStatus") ? el("lockerStatus").value : "free"; // all | free | used | manutencao
+  const filter = parseLockerFilter(el("lockerFilter")?.value);
+  const mode = el("lockerStatus") ? el("lockerStatus").value : "free"; 
 
   const usedSet = getUsedLockers();
   const freeList = getFreeLockers();
   const usedList = Array.from(usedSet).sort((a,b)=>a-b);
 
   let numbers = [];
-  
-  // AJUSTE DO MODO: Se for "manutencao" ou "all", carregamos todos os números para filtrar depois
   if(mode === "all" || mode === "manutencao"){
     for(let i=1;i<=state.totalLockers;i++) numbers.push(i);
   }else if(mode === "used"){
@@ -880,6 +812,7 @@ function renderLockers(){
   }
 
   const grid = el("freeGrid");
+  if(!grid) return;
   grid.innerHTML = "";
 
   let shown = 0;
@@ -900,7 +833,6 @@ function renderLockers(){
   for(const n of numbers){
     if(!matches(n)) continue;
 
-    // VERIFICAÇÃO DE MANUTENÇÃO
     let isMaint = false;
     let mi = null;
     try {
@@ -910,10 +842,8 @@ function renderLockers(){
       }
     } catch(e) {}
 
-    // Se o filtro selecionado for "Em Manutenção" e este armário NÃO estiver em manutenção, pula ele!
     if(mode === "manutencao" && !isMaint) continue;
 
-    // Se o modo for 'manutencao', precisamos descobrir se o armário de manutenção está livre ou ocupado
     const isUsed = (mode === "used") ? true : ((mode === "all" || mode === "manutencao") ? usedSet.has(n) : false);
     const emp = (mode === "free") ? null : findEmpByLocker(n);
     const position = lockerPosition(n);
@@ -923,18 +853,13 @@ function renderLockers(){
     const availKeysNow = keysAvailableForLocker(n);
     if(availKeysNow <= 0) card.classList.add("sem-chave");
     
-    // Se estiver em manutenção, adiciona a classe visual amarela
     if(isMaint) {
       card.classList.add("manut");
     }
 
     card.title = isUsed
-      ? `OCUPADO • ${position}
-Chaves: ${Math.max(0,(totalKeysForLocker(n)-keysInUseForLocker(n)))}/${totalKeysForLocker(n)} disponíveis
-${emp?.nome || "—"} (${emp?.cadastro || ""})`
-      : `LIVRE • ${position}
-Chaves: ${Math.max(0,(totalKeysForLocker(n)-keysInUseForLocker(n)))}/${totalKeysForLocker(n)} disponíveis
-Clique para copiar o número`;
+      ? `OCUPADO • ${position}\nChaves: ${Math.max(0,(totalKeysForLocker(n)-keysInUseForLocker(n)))}/${totalKeysForLocker(n)} disponíveis\n${emp?.nome || "—"} (${emp?.cadastro || ""})`
+      : `LIVRE • ${position}\nChaves: ${Math.max(0,(totalKeysForLocker(n)-keysInUseForLocker(n)))}/${totalKeysForLocker(n)} disponíveis\nClique para copiar o número`;
 
     const num = document.createElement("div");
     num.textContent = String(n);
@@ -949,7 +874,6 @@ Clique para copiar o número`;
     badgeLine.appendChild(statusTag);
     badgeLine.appendChild(tagPos(position));
 
-    // chaves
     const totalKeys = totalKeysForLocker(n);
     const inUseKeys = keysInUseForLocker(n);
     const availKeys = totalKeys - inUseKeys;
@@ -960,7 +884,6 @@ Clique para copiar o número`;
 
     badgeLine.appendChild(keyTag);
 
-    // badge de manutenção na tela
     if(isMaint && mi) {
       const mtag = document.createElement("span");
       mtag.className = "tag maint";
@@ -981,7 +904,7 @@ Clique para copiar o número`;
     card.addEventListener("click", async ()=>{
       if(isUsed && emp){
         switchTab("colabs");
-        el("searchInput").value = emp.cadastro;
+        if(el("searchInput")) el("searchInput").value = emp.cadastro;
         renderEmployees();
         setTimeout(()=>{
           const row = el("row-" + encodeURIComponent(emp.cadastro));
@@ -1011,14 +934,10 @@ Clique para copiar o número`;
   const total = state.totalLockers;
 
   const labelMode = mode === "all" ? "no total" : (mode === "used" ? "ocupados" : (mode === "manutencao" ? "em manutenção" : "livres"));
-  el("freeSummary").textContent = `${shown} mostrando • ${freeCount} livres • ${usedCount} ocupados • ${total} no total (${labelMode})`;
-
-  state._lastLockerVisible = Array.from(grid.querySelectorAll(".free-item > div:first-child")).map(d=>d.textContent);
+  if(el("freeSummary")) el("freeSummary").textContent = `${shown} mostrando • ${freeCount} livres • ${usedCount} ocupados • ${total} no total (${labelMode})`;
 }
 
-
 function renderRiskAndAlerts(){
-  // Armários em risco (total = 1)
   const riskGrid = el("riskGrid");
   const riskSummary = el("riskSummary");
   const zeroGrid = el("zeroKeysGrid");
@@ -1037,7 +956,6 @@ function renderRiskAndAlerts(){
     const availK = totalK - inUseK;
 
     if(totalK === 1) risk.push(i);
-    // sem reserva quando disponível = 0 (todas em uso) OU quando total = 0
     if((availK <= 0 && totalK > 0 && inUseK > 0) || totalK === 0) zero.push(i);
   }
 
@@ -1049,12 +967,10 @@ function renderRiskAndAlerts(){
     div.className = kind === "zero" ? "free-item ocupado" : "free-item";
     div.innerHTML = `<div>${n}</div><span class="mini">${lockerPosition(n)} • chaves ${Math.max(0, keysAvailableForLocker(n))}/${totalKeysForLocker(n)}</span>`;
     div.addEventListener("click", ()=> {
-      // ao clicar: vai para aba Armários e filtra pelo número
       switchTab("lockers");
       if(el("lockerFilter")) el("lockerFilter").value = String(n);
       if(el("lockerStatus")) el("lockerStatus").value = "all";
       renderLockers();
-      // destaca
       const card = Array.from(el("freeGrid").querySelectorAll(".free-item")).find(c=>c.querySelector("div")?.textContent===String(n));
       if(card){
         card.classList.add("flash");
@@ -1067,7 +983,6 @@ function renderRiskAndAlerts(){
   for(const n of risk) riskGrid.appendChild(makeCard(n, "risk"));
   for(const n of zero) zeroGrid.appendChild(makeCard(n, "zero"));
 
-  // alerta automático (toast) quando houver 0 chaves disponíveis
   if(zero.length){
     const sig = zero.slice(0,8).join(",");
     if(state._zeroKeysSig !== sig){
@@ -1081,6 +996,7 @@ function renderRiskAndAlerts(){
 
 function buildLockerOptions(selected){
   const sel = el("fArmario");
+  if(!sel) return;
   const used = getUsedLockers();
   const prev = selected != null ? Number(selected) : null;
   sel.innerHTML = "";
@@ -1110,7 +1026,6 @@ function renderAll(){
   updateStats();
   renderEmployees();
   renderLockers();
-  // mantém alertas/relatórios atualizados (se a aba existir)
   try{ renderRiskAndAlerts(); }catch{}
 }
 
@@ -1142,52 +1057,49 @@ function renderHistory(){
     tr.appendChild(tdText(h.obs));
     body.appendChild(tr);
   }
-
-  // Risco (1 chave)
   renderRiskAndAlerts();
 }
 
-// ===== Modal (Novo/Editar) =====
-let editing = null; // employee original
+let editing = null;
 function openModal(emp){
   editing = emp ? {...emp} : null;
-  el("modalTitle").textContent = emp ? "Editar colaborador" : "Novo colaborador";
+  if(el("modalTitle")) el("modalTitle").textContent = emp ? "Editar colaborador" : "Novo colaborador";
 
-  el("fCadastro").value = emp?.cadastro ?? "";
-  el("fCadastro").disabled = !!emp; // matrícula não muda
-
-  el("fNome").value = emp?.nome ?? "";
-  el("fAdmissao").value = emp?.admissao ?? "";
-  el("fCargo").value = emp?.cargo ?? "";
-  el("fChave").value = emp?.chaveEntregueEm ?? "";
+  if(el("fCadastro")) {
+    el("fCadastro").value = emp?.cadastro ?? "";
+    el("fCadastro").disabled = !!emp;
+  }
+  if(el("fNome")) el("fNome").value = emp?.nome ?? "";
+  if(el("fAdmissao")) el("fAdmissao").value = emp?.admissao ?? "";
+  if(el("fCargo")) el("fCargo").value = emp?.cargo ?? "";
+  if(el("fChave")) el("fChave").value = emp?.chaveEntregueEm ?? "";
 
   buildLockerOptions(emp?.armario ?? null);
-  el("fArmario").value = emp?.armario ? String(emp.armario) : "";
+  if(el("fArmario")) el("fArmario").value = emp?.armario ? String(emp.armario) : "";
 
-  modal.showModal();
+  modal?.showModal();
 }
 
-el("btnAdd").addEventListener("click", ()=> openModal(null));
+el("btnAdd")?.addEventListener("click", ()=> openModal(null));
 
-el("btnSave").addEventListener("click", async (ev)=>{
+el("btnSave")?.addEventListener("click", async (ev)=>{
   ev.preventDefault();
 
-  const cadastro = String(el("fCadastro").value).trim();
-  const nome = String(el("fNome").value).trim();
+  const cadastro = String(el("fCadastro")?.value).trim();
+  const nome = String(el("fNome")?.value).trim();
   if(!cadastro || !nome){
     showToast("Informe matrícula e nome.");
     return;
   }
 
-  const admissao = el("fAdmissao").value || "";
-  const cargo = String(el("fCargo").value).trim();
-  const armarioRaw = el("fArmario").value;
+  const admissao = el("fAdmissao")?.value || "";
+  const cargo = String(el("fCargo")?.value).trim();
+  const armarioRaw = el("fArmario")?.value;
   const armario = armarioRaw ? Number(armarioRaw) : null;
-  const chave = el("fChave").value || null;
+  const chave = el("fChave")?.value || null;
 
   const prevLocker = editing?.armario ?? null;
 
-  // validação de chaves (se marcou entrega)
   if(armario != null && chave){
     const exclude = editing?.cadastro ?? null;
     const avail = keysAvailableForLocker(armario, exclude);
@@ -1201,8 +1113,6 @@ el("btnSave").addEventListener("click", async (ev)=>{
 
   try{
     await writeEmployee(emp, prevLocker);
-
-    // 📜 histórico de chaves (pegou/devolveu)
     const prevKey = editing?.chaveEntregueEm ?? null;
     const newKey = emp.chaveEntregueEm ?? null;
 
@@ -1223,22 +1133,21 @@ el("btnSave").addEventListener("click", async (ev)=>{
   }
 });
 
-el("searchInput").addEventListener("input", renderEmployees);
-el("btnClearFilters").addEventListener("click", ()=>{
-  el("searchInput").value = "";
+el("searchInput")?.addEventListener("input", renderEmployees);
+el("btnClearFilters")?.addEventListener("click", ()=>{
+  if(el("searchInput")) el("searchInput").value = "";
   renderEmployees();
 });
-el("lockerFilter").addEventListener("input", renderLockers);
+el("lockerFilter")?.addEventListener("input", renderLockers);
 if(el("lockerStatus")) el("lockerStatus").addEventListener("change", renderLockers);
 
-// ===== Locker position override (Cima/Baixo) =====
-el("btnSavePos").addEventListener("click", async ()=>{
-  const n = Number(el("posNumber").value);
+el("btnSavePos")?.addEventListener("click", async ()=>{
+  const n = Number(el("posNumber")?.value);
   if(!Number.isFinite(n) || n < 1 || n > state.totalLockers){
     showToast("Número de armário inválido.");
     return;
   }
-  const pos = el("posValue").value === "CIMA" ? "CIMA" : "BAIXO";
+  const pos = el("posValue")?.value === "CIMA" ? "CIMA" : "BAIXO";
   try{
     await saveLockerPosition(n, pos);
     showToast(`Posição do armário ${n}: ${pos}`);
@@ -1247,20 +1156,17 @@ el("btnSavePos").addEventListener("click", async ()=>{
   }
 });
 
-// ===== Chaves por armário (Total de cópias) =====
-el("btnSaveKeys").addEventListener("click", async ()=>{
-  const n = Number(el("keyNumber").value);
-  const total = Number(el("keyTotal").value);
+el("btnSaveKeys")?.addEventListener("click", async ()=>{
+  const n = Number(el("keyNumber")?.value);
+  const total = Number(el("keyTotal")?.value);
   if(!Number.isFinite(n) || n < 1 || n > state.totalLockers){
     showToast("Número de armário inválido.");
     return;
   }
-  // permite 0 para representar "nenhuma chave física disponível" (ex.: chave perdida)
   if(!Number.isFinite(total) || total < 0 || total > 99){
     showToast("Total de chaves inválido (0-99).");
     return;
   }
-  // não permite reduzir abaixo das chaves em uso
   const inUse = keysInUseForLocker(n);
   if(total < inUse){
     showToast(`Não dá: já existem ${inUse} chave(s) em uso neste armário.`);
@@ -1274,7 +1180,6 @@ el("btnSaveKeys").addEventListener("click", async ()=>{
   }
 });
 
-// ===== Controle rápido de chaves (eventos) =====
 function todayISO(){
   const d = new Date();
   const yyyy = d.getFullYear();
@@ -1319,7 +1224,6 @@ async function handleKeyEvtSave(){
     return;
   }
 
-  // ações que precisam de colaborador
   const needsEmp = (tipo === "ENTREGOU" || tipo === "DEVOLVEU" || tipo === "PERDEU");
   if(needsEmp && !cadastro){
     showToast("Selecione um colaborador.");
@@ -1332,7 +1236,6 @@ async function handleKeyEvtSave(){
     return;
   }
 
-  // se for com colaborador, o armário precisa bater (evita bagunçar o índice)
   if(needsEmp && (emp.armario == null || Number(emp.armario) !== locker)){
     showToast("Esse colaborador não está com esse armário. Ajuste o armário do colaborador primeiro.");
     return;
@@ -1383,7 +1286,6 @@ async function handleKeyEvtSave(){
     if(tipo === "PERDEU"){
       const hadKey = !!emp.chaveEntregueEm;
       const updated = { ...emp, chaveEntregueEm: null };
-      // total de chaves diminui (chave física perdida)
       const inUseNow = keysInUseForLocker(locker);
       const inUseAfter = Math.max(0, inUseNow - (hadKey ? 1 : 0));
       totalDepois = Math.max(0, Math.floor(totalAntes) - 1);
@@ -1412,12 +1314,10 @@ async function handleKeyEvtSave(){
   }
 }
 
-// liga os inputs do formulário (se existir)
 if(el("keyEvtDate")) el("keyEvtDate").value = todayISO();
 if(el("btnKeyEvtSave")) el("btnKeyEvtSave").addEventListener("click", (e)=>{ e.preventDefault(); handleKeyEvtSave(); });
 if(el("btnKeyEvtClear")) el("btnKeyEvtClear").addEventListener("click", (e)=>{ e.preventDefault(); clearKeyEvtForm(); });
 
-// filtro do histórico
 if(el("histFilter")) el("histFilter").addEventListener("input", ()=> renderHistory());
 if(el("btnClearHist")) el("btnClearHist").addEventListener("click", (e)=>{
   e.preventDefault();
@@ -1425,8 +1325,8 @@ if(el("btnClearHist")) el("btnClearHist").addEventListener("click", (e)=>{
   renderHistory();
 });
 
-el("btnAddCopy").addEventListener("click", async ()=>{
-  const n = Number(el("keyNumber").value);
+el("btnAddCopy")?.addEventListener("click", async ()=>{
+  const n = Number(el("keyNumber")?.value);
   if(!Number.isFinite(n) || n < 1 || n > state.totalLockers){
     showToast("Informe o número do armário para adicionar cópia.");
     return;
@@ -1435,7 +1335,7 @@ el("btnAddCopy").addEventListener("click", async ()=>{
   const next = Math.min(99, current + 1);
   try{
     await saveLockerKeys(n, next);
-    el("keyTotal").value = next;
+    if(el("keyTotal")) el("keyTotal").value = next;
     showToast(`Cópia adicionada. Armário ${n}: total = ${next}`);
   }catch(err){
     showToast("Erro ao adicionar cópia: " + (err?.message || err));
@@ -1443,244 +1343,82 @@ el("btnAddCopy").addEventListener("click", async ()=>{
 });
 
 
-// ===== Importar / Exportar =====
-function downloadFile(filename, content, mime){
-  const blob = new Blob([content], { type: mime });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
-}
-
-el("btnExportJson").addEventListener("click", ()=>{
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    config: { totalLockers: state.totalLockers, defaultSplit: state.defaultSplit },
-    lockerPositions: state.lockerPositions || {},
-    lockerKeys: state.lockerKeys || {},
-    employees: state.employees
-  };
-  downloadFile("armarios-backup.json", JSON.stringify(payload, null, 2), "application/json");
-  showToast("Backup JSON gerado.");
-});
-
-function xmlEscape(s){
-  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;");
-}
-
-el("btnExportXml").addEventListener("click", ()=>{
-  const rows = state.employees.slice().sort((a,b)=>normalize(a.nome).localeCompare(normalize(b.nome)));
-  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<Colaboradores>\n`;
-  for(const e of rows){
-    xml += `  <Colaborador>\n`;
-    xml += `    <Cadastro>${xmlEscape(e.cadastro)}</Cadastro>\n`;
-    xml += `    <Nome>${xmlEscape(e.nome)}</Nome>\n`;
-    xml += `    <Admissao>${xmlEscape(e.admissao)}</Admissao>\n`;
-    xml += `    <Cargo>${xmlEscape(e.cargo)}</Cargo>\n`;
-    xml += `    <NumeroDoArmario>${e.armario ?? ""}</NumeroDoArmario>\n`;
-    xml += `    <ChaveEntregueEm>${xmlEscape(e.chaveEntregueEm ?? "")}</ChaveEntregueEm>\n`;
-    xml += `  </Colaborador>\n`;
+// ===== Importar XLSX (Botão deve ter ID 'btnImportXlsx') =====
+el("btnImportXlsx")?.addEventListener("click", async () => {
+  const file = el("xlsxFile")?.files?.[0];
+  if (!file) { 
+      showToast("Selecione um arquivo .xlsx."); 
+      return; 
   }
-  xml += `</Colaboradores>\n`;
-  downloadFile("colaboradores.xml", xml, "application/xml");
-  showToast("XML exportado.");
-});
 
-el("btnImportJson").addEventListener("click", async ()=>{
-  const file = el("jsonFile").files?.[0];
-  if(!file){ showToast("Selecione um JSON."); return; }
-  try{
-    const txt = await file.text();
-    const data = JSON.parse(txt);
-    const updates = {};
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const json = XLSX.utils.sheet_to_json(worksheet);
+      
+      const updates = {};
+      let count = 0;
+      
+      for (const row of json) {
+        const cadastro = String(row['Cadastro'] ?? row['cadastro'] ?? row['Matricula'] ?? "").trim();
+        if (!cadastro) continue;
 
-    if(data?.config?.totalLockers){
-      updates["config/totalLockers"] = Math.floor(Number(data.config.totalLockers));
-    }
-    if(data?.config?.defaultSplit != null){
-      updates["config/defaultSplit"] = Math.floor(Number(data.config.defaultSplit));
-    }
-    if(data?.lockerPositions && typeof data.lockerPositions === "object"){
-      for(const [k,v] of Object.entries(data.lockerPositions)){
-        updates[`lockerPositions/${k}`] = (v === "CIMA") ? "CIMA" : "BAIXO";
-      }
-    }
-
-    if(data?.lockerKeys && typeof data.lockerKeys === "object"){
-      for(const [k,v] of Object.entries(data.lockerKeys)){
-        const n = Math.floor(Number(k));
-        const total = Math.floor(Number(v));
-        if(!Number.isFinite(n) || n < 1) continue;
-        if(!Number.isFinite(total) || total < 1) continue;
-        updates[`lockerKeys/${n}`] = total;
-      }
-    }
-
-    if(Array.isArray(data?.employees)){
-      for(const e of data.employees){
-        const cadastro = String(e.cadastro ?? "").trim();
-        if(!cadastro) continue;
-        updates[`employees/${cadastro}`] = {
-          cadastro,
-          nome: e.nome ?? "",
-          admissao: e.admissao ?? "",
-          cargo: e.cargo ?? "",
-          armario: (e.armario==null||e.armario==="") ? null : Number(e.armario),
-          chaveEntregueEm: e.chaveEntregueEm ?? null,
+        updates[cadastro] = {
+          cadastro: cadastro,
+          nome: row['Nome'] ?? row['nome'] ?? "",
+          admissao: row['Admissao'] ?? row['admissao'] ?? "",
+          cargo: row['Cargo'] ?? row['cargo'] ?? "",
+          armario: null,
+          chaveEntregueEm: null,
           updatedAt: Date.now()
         };
+        count++;
       }
+
+      await update(ref(db, basePath + "/employees"), updates);
+      showToast(count + " colaboradores importados com sucesso! ✅");
+    } catch (err) {
+      console.error(err);
+      showToast("Erro ao ler Excel: " + err.message);
     }
-
-    // Salva exatamente na pasta da loja logada
-    await update(ref(db, basePath), updates);
-    showToast("JSON importado para o Firebase ✅");
-  }catch(err){
-    showToast("Erro ao importar JSON: " + (err?.message || err));
-  }
-});
-
-function guessTextContent(node, names){
-  for(const nm of names){
-    const el = node.getElementsByTagName(nm)[0];
-    if(el && el.textContent != null) return el.textContent.trim();
-  }
-  return "";
-}
-
-el("btnImportXlsx")?.addEventListener("click", async () => {
-    const file = el("xlsxFile").files?.[0];
-    if (!file) { 
-        showToast("Selecione um arquivo .xlsx primeiro."); 
-        return; 
-    }
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            
-            // Converte para JSON
-            const json = XLSX.utils.sheet_to_json(worksheet);
-            
-            // DEBUG: Isso vai mostrar no F12 > Console como o código está enxergando seu Excel
-            console.log("Colunas encontradas no Excel:", Object.keys(json[0] || {}));
-            console.log("Exemplo de linha:", json[0]);
-
-            const updates = {};
-            let count = 0;
-
-// ... dentro do seu loop de importação
-for (const row of json) {
-  const cadastro = String(row['Cadastro'] ?? row['cadastro'] ?? row['Matricula'] ?? "").trim();
-  if (!cadastro) continue;
-
-  // CORREÇÃO: Remova o "employees/" daqui. Deixe apenas a variável 'cadastro'.
-  updates[cadastro] = { 
-    cadastro: cadastro,
-    nome: row['Nome'] ?? row['nome'] ?? "",
-    admissao: row['Admissao'] ?? row['admissao'] ?? "",
-    cargo: row['Cargo'] ?? row['cargo'] ?? "",
-    armario: null,
-    chaveEntregueEm: null,
-    updatedAt: Date.now()
   };
-  count++;
-}
-
-// O caminho do ref continua o mesmo:
-await update(ref(db, basePath + "/employees"), updates);
-
-            if(count === 0) {
-                showToast("Nenhum dado válido encontrado. Verifique os cabeçalhos.");
-                return;
-            }
-
-            // O update aqui usa basePath/employees, garantindo que vai para a loja correta
-            await update(ref(db, basePath + "/employees"), updates);
-            
-            showToast(`Sucesso! ${count} colaboradores importados.`);
-        } catch (err) {
-            console.error("Erro na importação:", err);
-            showToast("Erro ao ler Excel: " + err.message);
-        }
-    };
-    reader.readAsArrayBuffer(file);
+  reader.readAsArrayBuffer(file);
 });
 
-// ===== Config =====
-el("btnSaveTotal").addEventListener("click", async ()=>{
-  const total = Math.floor(Number(el("totalInput").value));
-  if(!Number.isFinite(total) || total < 1){
-    showToast("Total inválido.");
-    return;
-  }
-  try{
-    await saveTotalLockers(total);
-    showToast("Total salvo.");
-  }catch(err){
-    showToast("Erro ao salvar total: " + (err?.message || err));
-  }
+el("btnSaveTotal")?.addEventListener("click", async ()=>{
+  const total = Math.floor(Number(el("totalInput")?.value));
+  if(!Number.isFinite(total) || total < 1){ showToast("Total inválido."); return; }
+  try{ await saveTotalLockers(total); showToast("Total salvo."); }catch(err){ showToast("Erro ao salvar total: " + (err?.message || err)); }
 });
 
-el("btnSaveSplit").addEventListener("click", async ()=>{
-  const split = Math.floor(Number(el("splitInput").value));
-  if(!Number.isFinite(split) || split < 0){
-    showToast("Valor inválido.");
-    return;
-  }
-  const padrao = (el("padraoAteInput")?.value === "CIMA") ? "CIMA" : "BAIXO";
+el("btnSaveSplit")?.addEventListener("click", async ()=>{
+  const split = Math.floor(Number(el("splitInput")?.value));
+  if(!Number.isFinite(split) || split < 0){ showToast("Valor inválido."); return; }
   try{
-    // mantém compatibilidade: defaultSplit + grava também (divisao/padraoAte)
-    await Promise.all([
-      saveDefaultSplit(split),
-      set(ref(db, `${basePath}/config/divisao`), split),
-      //saveDefaultPadraoAte(padrao)
-    ]);
+    await Promise.all([ saveDefaultSplit(split), set(ref(db, `${basePath}/config/divisao`), split) ]);
     showToast("Regra padrão salva.");
-  }catch(err){
-    showToast("Erro ao salvar regra: " + (err?.message || err));
-  }
+  }catch(err){ showToast("Erro ao salvar regra: " + (err?.message || err)); }
 });
 
-// ===== Copy free list =====
-el("btnCopyFree").addEventListener("click", async ()=>{
-  // copia os números atualmente visíveis na aba Armários
+el("btnCopyFree")?.addEventListener("click", async ()=>{
   const grid = el("freeGrid");
   const nums = Array.from(grid.querySelectorAll(".free-item > div:first-child")).map(d=>d.textContent).filter(Boolean);
   const txt = nums.join(", ");
-  if(!txt){
-    showToast("Nada para copiar.");
-    return;
-  }
-  try{
-    await navigator.clipboard.writeText(txt);
-    showToast("Lista copiada.");
-  }catch{
-    downloadFile("armarios-visiveis.txt", txt);
-    showToast("Baixei um .txt com a lista.");
-  }
+  if(!txt){ showToast("Nada para copiar."); return; }
+  try{ await navigator.clipboard.writeText(txt); showToast("Lista copiada."); }catch{ showToast("Erro ao copiar."); }
 });
 
-// ===== Boot =====
 startRealtime();
 renderAll();
 
-// abrir diretamente /historicoChaves
 try{
-  if(String(location.pathname||"").toLowerCase().includes("historicochaves")){
-    switchTab("history");
-  }
+  if(String(location.pathname||"").toLowerCase().includes("historicochaves")){ switchTab("history"); }
 }catch{}
 
-
-// ===== INIT_MAINTENANCE_BLOCK_V1 =====
 (function initMaintenanceUI(){
   try{
     const maintNumber = document.getElementById("maintNumber");
@@ -1693,12 +1431,9 @@ try{
 
     const safeToast = (msg)=>{
       try{ if(typeof showToast === "function") showToast(msg); }catch(e){}
-      try{ console.log("[maint]", msg); }catch(e){}
     };
 
-    async function trySet(path, payload){
-      return await set(ref(db, path), payload);
-    }
+    async function trySet(path, payload){ return await set(ref(db, path), payload); }
 
     async function saveMaint(n, status, note){
       const payload = { status, note, updatedAt: Date.now() };
@@ -1715,8 +1450,7 @@ try{
       const n = Number(maintNumber?.value);
       const max = Number(state.totalLockers || 0) || null;
       if(!Number.isFinite(n) || n < 1 || (max && n > max)){
-        safeToast("Informe um número de armário válido.");
-        return;
+        safeToast("Informe um número de armário válido."); return;
       }
       const status = String(maintStatus?.value || "OK");
       const note = String(maintNote?.value || "").trim();
@@ -1725,12 +1459,8 @@ try{
         const res = await saveMaint(n, status, note);
         safeToast(status === "MANUTENCAO" ? `Armário ${n} marcado para manutenção.` : `Armário ${n} OK.`);
         if(maintHint) maintHint.textContent = `Salvo em /${res.path}` + (note ? ` • ${note}` : "");
-      }catch(err){
-        console.error("Erro ao salvar manutenção:", err);
-        safeToast("Erro ao salvar manutenção (ver console).");
-      }finally{
-        btnSaveMaint.disabled = false;
-      }
+      }catch(err){ safeToast("Erro ao salvar manutenção (ver console)."); }
+      finally{ btnSaveMaint.disabled = false; }
     });
 
     btnClearMaint?.addEventListener("click", ()=>{
@@ -1740,51 +1470,19 @@ try{
       if(maintHint) maintHint.textContent = "";
     });
 
-    // escuta os dois caminhos (config primeiro)
     try{
       onValue(ref(db, basePath + "/config/lockerMaint"), (snap)=>{
-        try{
-          state.lockerMaint = snap.val() || {};
-          if(typeof renderLockers === "function") renderLockers();
-        }catch(e){}
+        try{ state.lockerMaint = snap.val() || {}; if(typeof renderLockers === "function") renderLockers(); }catch(e){}
       });
     }catch(e){}
-    try{
-      onValue(ref(db, basePath + "/lockerMaint"), (snap)=>{
-        try{
-          const v = snap.val() || {};
-          state.lockerMaint = Object.assign({}, v, state.lockerMaint || {});
-          if(typeof renderLockers === "function") renderLockers();
-        }catch(e){}
-      });
-    }catch(e){}
-  }catch(e){
-    console.warn("initMaintenanceUI failed", e);
-  }
+  }catch(e){}
 })();
-// ==========================================
-// AUTOCOMPLETAR COLABORADOR PELO NÚMERO DO ARMÁRIO
-// ==========================================
+
 document.getElementById("keyEvtLocker")?.addEventListener("input", (e) => {
   const lockerNum = Number(e.target.value);
   const selectEmp = document.getElementById("keyEvtEmp");
-
   if (!selectEmp) return;
-
-  // Se o campo do armário for limpo, volta o select para o padrão
-  if (!e.target.value) {
-    selectEmp.value = "";
-    return;
-  }
-
-  // Procura na lista de funcionários quem está com esse armário ativo
+  if (!e.target.value) { selectEmp.value = ""; return; }
   const donoDoArmario = state.employees.find(emp => Number(emp.armario) === lockerNum);
-
-  if (donoDoArmario) {
-    // Se achou, seleciona o colaborador usando a matrícula (cadastro) dele como chave
-    selectEmp.value = donoDoArmario.cadastro;
-  } else {
-    // Se digitou um número e ninguém usa esse armário, deixa em branco para você selecionar manualmente
-    selectEmp.value = "";
-  }
+  if (donoDoArmario) { selectEmp.value = donoDoArmario.cadastro; } else { selectEmp.value = ""; }
 });
