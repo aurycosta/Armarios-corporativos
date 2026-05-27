@@ -1,22 +1,6 @@
 ﻿<!doctype html>
 <html lang="pt-BR">
 <head>
-<script>
-  // SISTEMA DE SEGURANÇA INTELIGENTE (COM LEITURA DE QR CODE)
-  const params = new URLSearchParams(window.location.search);
-  const isClaim = params.get('claim') === '1';
-  const lojaQr = params.get('loja');
-
-  if (isClaim && lojaQr) {
-    // Se o funcionário está lendo via QR Code, libera o acesso direto para a loja do QR Code!
-    localStorage.setItem('loja_armarios', lojaQr);
-  } else {
-    // Se for o administrador abrindo o painel normal, exige login e senha!
-    if (!sessionStorage.getItem('sessao_ativa') || !localStorage.getItem('loja_armarios')) {
-      window.location.href = 'login.html';
-    }
-  }
-</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
   // Agora só deixa entrar se tiver SESSÃO ATIVA (digitou a senha hoje) e loja.
@@ -37,7 +21,22 @@
       }catch(e){}
     })();
   </script>
-  
+<script>
+  // SISTEMA DE SEGURANÇA INTELIGENTE (COM LEITURA DE QR CODE)
+  const params = new URLSearchParams(window.location.search);
+  const isClaim = params.get('claim') === '1';
+  const lojaQr = params.get('loja');
+
+  if (isClaim && lojaQr) {
+    // Se o funcionário está lendo via QR Code, libera o acesso direto para a loja do QR Code!
+    localStorage.setItem('loja_armarios', lojaQr);
+  } else {
+    // Se for o administrador abrindo o painel normal, exige login e senha!
+    if (!sessionStorage.getItem('sessao_ativa') || !localStorage.getItem('loja_armarios')) {
+      window.location.href = 'login.html';
+    }
+  }
+</script>
   <style>
     /* Estilos para o relatório de funcionários sem armário e tela de impressão gráfica */
     @media print {
