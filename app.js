@@ -612,21 +612,20 @@ function refreshClaimOnlyUI(){
      return;
   }
 
-  // 3. VERIFICAÇÃO: Ele tem outro armário (Pergunta se deseja trocar)
+  // 3. VERIFICAÇÃO: Ele tem outro armário (Bloqueia e manda pro DP)
   if (emp.armario && Number(emp.armario) !== targetLocker) {
      if(msgEl) {
-         msgEl.style.color = "#fcd34d"; // Amarelo (Aviso)
-         msgEl.textContent = `⚠️ Seu armário atual é o ${emp.armario}. Deseja trocar para o ${targetLocker}?`;
+         msgEl.style.color = "#fcd34d"; // Cor de aviso (Amarelo)
+         msgEl.textContent = `⚠️ Seu armário atual é o ${emp.armario}. Para realizar a troca, procure o DP.`;
      }
-     // Libera o botão para ele trocar de armário!
-     if(claimOnlyConfirm) claimOnlyConfirm.disabled = false;
+     // BLOQUEIA o botão. Ele não pode trocar sozinho via QR Code.
+     if(claimOnlyConfirm) claimOnlyConfirm.disabled = true;
      return;
   }
 
-  // 4. Se chegou aqui, está tudo certo e livre
+  // 4. Se chegou aqui, ele não tem nenhum armário e o armário atual está livre!
   if(claimOnlyConfirm) claimOnlyConfirm.disabled = false;
 }
-
 // [O RESTANTE DO SEU CÓDIGO ORIGINAL SEGUE ABAIXO]
 
 claimOnlyCadastro?.addEventListener("input", refreshClaimOnlyUI);
