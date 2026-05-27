@@ -1,6 +1,4 @@
-﻿<!doctype html>
-<html lang="pt-BR">
-<head>
+﻿<head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Armários • Colaboradores</title>
@@ -24,9 +22,7 @@
       }
     }
   </script>
-
   <link rel="stylesheet" href="styles.css" />
-  
   <style>
     /* Estilos para o relatório de funcionários sem armário e tela de impressão gráfica */
     @media print {
@@ -47,743 +43,579 @@
       }
       body.print-no-lockers-mode #tab-no-locker {
         display: block !important;
-        background: none !important;
-        border: none !important;
-        box-shadow: none !important;
-      }
-      body.print-no-lockers-mode .panel-section {
-        border: none !important;
-        background: none !important;
+        width: 100% !important;
+        margin: 0 !important;
         padding: 0 !important;
       }
-      body.print-no-lockers-mode table {
-        color: #000 !important;
-        border-color: #ccc !important;
+      body.print-no-lockers-mode .table-wrap {
+        border: 1px solid #000 !important;
+        background: #fff !important;
+        box-shadow: none !important;
       }
-      body.print-no-lockers-mode th {
-        background-color: #eee !important;
+      body.print-no-lockers-mode .grid {
+        min-width: 100% !important;
         color: #000 !important;
       }
-      body.print-no-lockers-mode td, body.print-no-lockers-mode th {
+      body.print-no-lockers-mode .grid th {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+        border-bottom: 2px solid #000 !important;
+      }
+      body.print-no-lockers-mode .grid td {
         border-bottom: 1px solid #ccc !important;
+        color: #000 !important;
+        padding: 10px !important;
       }
     }
-
-    .toast {
-      position: fixed; bottom: 20px; right: 20px;
-      background: rgba(16,26,46, .95); border: 1px solid var(--line);
-      padding: 12px 20px; border-radius: 8px; font-size: 14px;
-      opacity: 0; pointer-events: none; transition: opacity .2s;
-      z-index: 9999; box-shadow: var(--shadow);
-    }
-    .toast.show { opacity: 1; }
-
-    .topbar {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 24px;
-    }
-    .brand { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
-    .brand span { color: var(--accent); }
-
-    .conn-status {
-      font-size: 13px; font-weight: 600; padding: 4px 10px;
-      border-radius: 12px; background: rgba(255,255,255,.1);
-    }
-    .conn-status.ok { background: rgba(52,211,153,.15); color: var(--ok); }
-    .conn-status.bad { background: rgba(251,113,133,.15); color: var(--danger); }
-
-    .stats {
-      display: flex; gap: 16px; padding: 0 24px 24px; flex-wrap: wrap;
-    }
-    .stat-card {
-      background: var(--panel); border: 1px solid var(--line);
-      padding: 16px 20px; border-radius: 12px; flex: 1; min-width: 140px;
-      box-shadow: 0 4px 12px rgba(0,0,0,.15);
-    }
-    .stat-val { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
-    .stat-label { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
-
-    .tabs {
-      display: flex; gap: 8px; padding: 0 24px;
-      border-bottom: 1px solid var(--line);
-      overflow-x: auto;
-    }
-    .tab {
-      padding: 12px 20px; cursor: pointer; color: var(--muted);
-      font-weight: 600; border-bottom: 2px solid transparent;
-      white-space: nowrap; transition: color .2s;
-    }
-    .tab:hover { color: var(--text); }
-    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-    .panel { display: none; padding: 24px; max-width: 1200px; margin: 0 auto; }
-    .panel.active { display: block; }
-
-    .panel-section {
-      background: var(--panel); border: 1px solid var(--line);
-      border-radius: 16px; padding: 24px; margin-bottom: 24px;
-      box-shadow: var(--shadow);
-    }
-    .panel-section h3 { margin-top: 0; margin-bottom: 16px; font-size: 16px; font-weight: 700; color: var(--accent); }
-
-    .toolbar {
-      display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
-    }
-    .toolbar input, .toolbar select {
-      flex: 1; min-width: 200px;
-    }
-
-    input, select, textarea {
-      background: rgba(0,0,0,.2); border: 1px solid var(--line);
-      color: var(--text); padding: 10px 14px; border-radius: 8px;
-      font-family: inherit; font-size: 14px; outline: none;
-      transition: border-color .2s;
-    }
-    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
-    input:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .btn {
-      background: var(--line); color: var(--text); border: none;
-      padding: 10px 16px; border-radius: 8px; cursor: pointer;
-      font-weight: 600; font-size: 14px; transition: all .2s;
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-    }
-    .btn:hover { background: rgba(255,255,255,.2); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-primary { background: var(--accent); color: #000; }
-    .btn-primary:hover { background: #93c5fd; }
-    .btn-danger { background: var(--danger); color: #000; }
-    .btn-danger:hover { background: #fca5a5; }
-    .btn-ghost { background: transparent; }
-    .btn-ghost:hover { background: var(--line); }
-
-    table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    th { text-align: left; padding: 12px; color: var(--muted); border-bottom: 1px solid var(--line); font-weight: 600; }
-    td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,.05); vertical-align: middle; }
-    tr:hover td { background: rgba(255,255,255,.02); }
-
-    .tag {
-      display: inline-block; padding: 2px 8px; border-radius: 12px;
-      font-size: 11px; font-weight: 700; background: var(--line); color: var(--text);
-      letter-spacing: .5px; margin-right: 4px;
-    }
-    .tag.info { background: rgba(96,165,250,.2); color: #93c5fd; }
-    .tag.ok { background: rgba(52,211,153,.2); color: var(--ok); }
-    .tag.warn { background: rgba(251,191,36,.2); color: #fcd34d; }
-    .tag.danger { background: rgba(251,113,133,.2); color: var(--danger); }
-    .tag.maint { background: rgba(234,88,12,.2); color: #fdba74; }
-
-    .cell-btn {
-      background: none; border: 1px dashed var(--line); color: var(--accent);
-      cursor: pointer; padding: 4px 8px; border-radius: 4px; font-family: inherit; font-size: 13px; font-weight: 600;
-    }
-    .cell-btn:hover { border-color: var(--accent); background: rgba(96,165,250,.1); }
-
-    .mini { font-size: 11px; color: var(--muted); display: block; margin-top: 4px; line-height: 1.3; }
-    .text-center { text-align: center; }
-
-    /* Armários Grid */
-    .grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;
-    }
-    .free-item {
-      background: var(--panel2); border: 1px solid var(--line);
-      border-radius: 12px; padding: 12px; text-align: center;
-      cursor: pointer; transition: transform .1s, border-color .2s;
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-    }
-    .free-item:hover { transform: translateY(-2px); border-color: var(--accent); }
-    .free-item > div:first-child { font-size: 24px; font-weight: 800; font-family: var(--mono); margin-bottom: 4px; }
-    
-    .free-item.livre { border-left: 4px solid var(--ok); }
-    .free-item.ocupado { border-left: 4px solid var(--danger); opacity: 0.8; }
-    .free-item.sem-chave { border: 2px dashed var(--danger); }
-    .free-item.manut { background: rgba(234, 88, 12, 0.1); border-left: 4px solid #f97316; }
-
-    .badge-line { display: flex; gap: 4px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
-
-    dialog {
-      background: var(--panel); color: var(--text); border: 1px solid var(--line);
-      border-radius: 16px; padding: 24px; box-shadow: var(--shadow); max-width: 400px; width: 100%;
-      margin: auto;
-    }
-    dialog::backdrop { background: rgba(0,0,0,.7); backdrop-filter: blur(4px); }
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
-    .form-group input, .form-group select { width: 100%; }
-    .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; }
-
-    .qr-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-top: 24px;
-    }
-    .qr-item {
-      background: #fff; color: #000; padding: 12px; border-radius: 12px; text-align: center;
-      display: flex; flex-direction: column; align-items: center;
-    }
-    .qr-top { width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: 800; font-size: 14px; }
-    .qr-url { font-size: 10px; color: #666; word-break: break-all; margin-top: 8px; font-family: var(--mono); }
-
-    .flash { animation: flashCell 1.8s ease-out; }
-    @keyframes flashCell {
-      0% { background-color: rgba(52,211,153,.4); }
-      100% { background-color: transparent; }
-    }
-
-    .pulse { animation: pulseWarning 2s infinite; }
-    @keyframes pulseWarning {
-      0% { box-shadow: 0 0 0 0 rgba(251,113,133,.4); }
-      70% { box-shadow: 0 0 0 8px rgba(251,113,133,0); }
-      100% { box-shadow: 0 0 0 0 rgba(251,113,133,0); }
-    }
-
-    .pill {
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 800;
-      background: var(--danger); color: #000;
-    }
-
-    .claim-only {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-    }
-
-    .claim-only h2 {
-      color: var(--accent);
-      margin-bottom: 20px;
-    }
-
-    .claim-box {
-      width: 100%;
-      max-width: 400px;
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      padding: 16px;
-      background: rgba(255,255,255,.04);
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    }
-    .claim-title{ font-size: 18px; font-weight: 800; letter-spacing:.2px; }
-
-
-    /* ===== Modo Claim (QR) e Gate Admin ===== */
-    .claim-only{ display:none; }
-    .admin-only{ display:none; }
-
-    html.claim-mode body .claim-only{ display:block; max-width: 520px; margin: 28px auto; padding: 0 16px; }
-    html.claim-mode body .admin-only,
-    html.claim-mode body .tabs,
-    html.claim-mode body .panel,
-    html.claim-mode body .topbar,
-    html.claim-mode body .toast,
-    html.claim-mode body dialog { display:none !important; }
-
-    html.admin-locked body .admin-only{ display:block; max-width: 520px; margin: 28px auto; padding: 0 16px; }
-    html.admin-locked body .claim-only,
-    html.admin-locked body .tabs,
-    html.admin-locked body .panel,
-    html.admin-locked body .topbar,
-    html.admin-locked body .toast,
-    html.admin-locked body dialog { display:none !important; }
-
   </style>
 </head>
 <body>
-
-  <div class="admin-only">
-    <div class="panel-section text-center" style="margin-top:10vh;">
-      <h2>🔒 Acesso Restrito</h2>
-      <p class="muted">Digite o PIN do administrador para gerenciar o sistema.</p>
-      <input type="password" id="adminPinInput" placeholder="PIN numérico" style="max-width:200px;text-align:center;font-size:24px;letter-spacing:4px;margin:16px auto;display:block;">
-      <button class="btn btn-primary" id="btnAdminEnter">Entrar</button>
-      <div id="adminGateMsg" style="color:var(--danger); margin-top:12px; font-size:14px; font-weight:600;"></div>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">🔐</div>
+      <div>
+        <div class="title" id="tituloLoja">Controle de Armários</div>
+<script>
+  const lojaText = localStorage.getItem('loja_armarios') || '';
+  document.getElementById('tituloLoja').innerText = "Armários • " + lojaText;
+</script>
+        <div class="subtitle">Mapeie colaboradores ↔ armário e controle disponibilidade</div>
+      </div>
     </div>
-  </div>
-
-  <div class="claim-only">
-    <h2>📱 Autoatendimento</h2>
-    <div class="claim-box">
-      <div class="claim-title">Armário <span id="claimOnlyLockerDisplay" style="color:var(--accent);">--</span></div>
-      <input type="hidden" id="claimOnlyLocker">
-      
-      <div style="margin-top:20px; text-align:left;">
-        <label style="display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:600;">Sua Matrícula</label>
-        <input type="number" id="claimOnlyCadastro" placeholder="Ex: 26374" style="width:100%; font-size:16px;">
-      </div>
-
-      <div style="margin-top:16px; text-align:left;">
-        <label style="display:block; font-size:13px; color:var(--muted); margin-bottom:6px; font-weight:600;">Confirmar Nome</label>
-        <input type="text" id="claimOnlyNome" disabled style="width:100%; opacity:0.8;">
-      </div>
-
-      <button class="btn btn-primary" id="claimOnlyConfirm" disabled style="width:100%; margin-top:24px; font-size:16px;">Confirmar meu Armário ✅</button>
-      
-      <div id="claimOnlyMsg" style="margin-top:16px; font-weight:600; font-size:14px;"></div>
-    </div>
-  </div>
-
-  <div class="topbar">
-    <div class="brand">Armários<span>.</span></div>
-    <div style="display:flex; align-items:center; gap:12px;">
-      <div id="zeroKeysPill" class="pill" style="display:none;" title="Armários ocupados sem chave reserva no sistema.">
-        ⚠️ <span id="zeroKeysCount">0</span> sem reserva
-      </div>
-      <div id="connStatus" class="conn-status bad">Conectando...</div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <div class="conn" id="connStatus">Conectando…</div>
+      <button class="btn btn-ghost small" id="btnAdminLogout" title="Sair">Sair 🔒</button>
       <button class="btn btn-ghost small" onclick="sessionStorage.removeItem('sessao_ativa'); localStorage.removeItem('loja_armarios'); window.location.href='login.html'" title="Trocar Loja">🏢 Trocar Loja</button>
-      <button class="btn btn-ghost small" id="btnAdminLogout" title="Sair do modo Admin">Deslogar</button>
+    </div>
+  </header>
+
+  <!-- PAINEL DE ESTATÍSTICAS ATUALIZADO (FLEX WRAP ADICIONADO PARA NÃO APERTAR OS BLOCOS) -->
+  <div class="stats" style="flex-wrap: wrap;">
+    <div class="pill">
+      <div class="pill-label">Total</div>
+      <div class="pill-value" id="totalLockers">300</div>
+    </div>
+    <div class="pill">
+      <div class="pill-label">Ocupados</div>
+      <div class="pill-value" id="usedLockers">0</div>
+    </div>
+    <div class="pill pill-ok">
+      <div class="pill-label">Disponíveis</div>
+      <div class="pill-value" id="freeLockers">300</div>
+    </div>
+    <div class="pill pill-warn" id="zeroKeysPill" title="Armários sem chave reserva">
+      <div class="pill-label">Sem Chave reserva</div>
+      <div class="pill-value" id="zeroKeysCount">0</div>
+    </div>
+    <!-- NOVO BLOCO: SEM ARMÁRIO -->
+    <div class="pill" style="border-color: rgba(251,113,133,.4); color: #fb7185; min-width: 140px;" title="Colaboradores cadastrados que estão sem armário">
+      <div class="pill-label">Sem Armário</div>
+      <div class="pill-value" id="noLockerCount">...</div>
+    </div>
+    <!-- NOVO BLOCO: EM MANUTENÇÃO -->
+<div class="pill" style="border-color: rgba(250,204,21,.45); background: rgba(250,204,21,.10); min-width: 140px;" title="Armários marcados para manutenção">
+      <div class="pill-label" style="color: #facc15;">Em Manutenção</div>
+      <div class="pill-value" id="maintCount" style="color: #facc15;">...</div>                
     </div>
   </div>
+  
+  <main class="container">
+    <nav class="tabs">
+      <button class="tab active" data-tab="colabs">Colaboradores 👥</button>
+      <button class="tab" data-tab="lockers">Armários 🧰</button>
+      <button class="tab" data-tab="import">Importar/Exportar 📦</button> 
+      <button class="tab" data-tab="config">Config ⚙️</button>
+      <button class="tab" data-tab="history">Histórico 📜</button>
+      <button class="tab" data-tab="no-locker" id="btnTabNoLocker" style="border-color: rgba(251,113,133,.4);">Sem Armário ⚠️</button>
+    </nav>
 
-  <div class="stats">
-    <div class="stat-card">
-      <div class="stat-val" id="totalLockers">0</div>
-      <div class="stat-label">Total Cadastrado</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val" id="usedLockers">0</div>
-      <div class="stat-label">Ocupados</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-val" id="freeLockers" style="color:var(--ok);">0</div>
-      <div class="stat-label">Disponíveis</div>
-    </div>
-  </div>
-
-  <div class="tabs">
-    <div class="tab active" data-tab="colabs">Colaboradores</div>
-    <div class="tab" data-tab="no-locker">Sem Armário</div>
-    <div class="tab" data-tab="lockers">Armários (Visão Geral)</div>
-    <div class="tab" data-tab="history">Eventos & Histórico</div>
-    <div class="tab" data-tab="import">Importar / Exportar</div>
-    <div class="tab" data-tab="config">Configurações & QR</div>
-  </div>
-
-  <div id="tab-colabs" class="panel active">
-    <div class="toolbar">
-      <input type="text" id="searchInput" placeholder="Buscar por nome, matrícula, cargo ou armário..." />
-      <button class="btn" id="btnClearFilters">Limpar</button>
-      <button class="btn btn-primary" id="btnAdd">+ Novo Colaborador</button>
-    </div>
-    <div style="overflow-x:auto;">
-      <table>
-        <thead>
-          <tr>
-            <th>Matrícula</th>
-            <th>Nome</th>
-            <th>Admissão</th>
-            <th>Cargo</th>
-            <th title="Clique no número para editar o colaborador">Armário</th>
-            <th>Posição</th>
-            <th>Chave (Data)</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="tab-no-locker" class="panel">
-    <div class="panel-section">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <h3>Colaboradores Sem Armário</h3>
-        <button class="btn btn-primary" id="btnPrintNoLockerReport">🖨️ Imprimir Relatório</button>
+    <!-- CLAIM / ADMIN ONLY (ESCONDIDOS NORMALMENTE) -->
+    <section class="claim-only" id="claimOnly">
+      <div class="claim-card">
+        <div class="claim-title">🔐 Confirmar armário</div>
+        <div class="muted small" id="claimSub">Autoatendimento via QR do armário</div>
+        <div class="form-grid" style="margin-top:12px">
+          <label><span>Armário</span><input id="claimOnlyLocker" type="number" readonly /></label>
+          <label><span>Matrícula</span><input id="claimOnlyCadastro" type="text" inputmode="numeric" placeholder="Ex.: 26335" /></label>
+          <label style="grid-column: 1 / -1"><span>Nome</span><input id="claimOnlyNome" type="text" readonly placeholder="Digite a matrícula" /></label>
+          <label style="grid-column: 1 / -1; display:flex; gap:10px; align-items:center">
+            <input id="claimOnlyAgree" type="checkbox" />
+            <span class="small">Está correto? Confirmo que este armário é meu.</span>
+          </label>
+        </div>
+        <div class="row" style="gap:10px; margin-top:14px">
+          <button class="btn" id="claimOnlyConfirm" disabled>Confirmar</button>
+        </div>
+        <div class="muted small" id="claimOnlyMsg" style="margin-top:10px"></div>
       </div>
-      <p class="muted" style="margin-bottom: 16px;">Esta lista mostra automaticamente todos os colaboradores cadastrados que ainda não possuem um armário atribuído.</p>
-      
-      <div style="overflow-x:auto;">
-        <table>
+    </section>
+
+    <section class="admin-only" id="adminGate">
+      <div class="admin-card">
+        <div class="admin-title">🔒 Acesso restrito (DP)</div>
+        <div class="muted small">Digite o PIN de administrador para acessar o sistema completo.</div>
+        <div class="form-grid" style="margin-top:12px">
+          <label style="grid-column: 1 / -1"><span>PIN Admin</span><input id="adminPinInput" type="password" inputmode="numeric" placeholder="••••••" /></label>
+        </div>
+        <div class="row" style="gap:10px; margin-top:14px">
+          <button class="btn" id="btnAdminEnter">Entrar</button>
+        </div>
+        <div class="muted small" id="adminGateMsg" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <!-- ABA 1: COLABORADORES -->
+    <section class="panel active" id="tab-colabs">
+      <div class="toolbar">
+        <div class="search">
+          <input id="searchInput" type="search" placeholder="Buscar por matrícula, nome, cargo..." />
+          <span class="hint">Dica: clique no armário para editar rápido</span>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btnAdd">+ Novo colaborador</button>
+          <button class="btn btn-ghost" id="btnClearFilters">Limpar busca</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="grid">
           <thead>
             <tr>
               <th>Matrícula</th>
               <th>Nome</th>
-              <th>Cargo</th>
               <th>Admissão</th>
-              <th>Ações</th>
+              <th>Cargo</th>
+              <th>Armário</th>
+              <th>Posição</th>
+              <th>Chave entregue em</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div class="footer-note">
+        <span class="muted">Os dados ficam salvos em tempo real. Use Exportar para segurança.</span>
+      </div>
+    </section>
+
+    <!-- ABA 2: ARMÁRIOS -->
+    <section class="panel" id="tab-lockers">
+      <div class="toolbar">
+        <div class="search">
+          <input id="lockerFilter" type="search" placeholder="Filtrar (ex: 42, 1-50)..." />
+        </div>
+        <div class="actions">
+          <select id="lockerStatus" class="select">
+            <option value="all">Todos</option>
+            <option value="free">Livres</option>
+            <option value="used">Ocupados</option>
+            <option value="manutencao">Em Manutenção</option>
+          </select>
+          <button class="btn btn-ghost" id="btnCopyFree">Copiar livres</button>
+        </div>
+      </div>
+
+      <div class="lockers-head" style="margin-bottom: 10px;">
+        <div class="lockers-title" style="font-weight: bold;">Armários disponíveis</div>
+        <div class="lockers-sub" id="freeSummary" style="color: var(--muted); font-size: 13px;"></div>
+      </div>
+
+      <div class="cards" style="margin-bottom: 20px;">
+        <div class="card locker-pos-card">
+          <h3>Posição (Cima/Baixo)</h3>
+          <div class="row" style="display:flex; gap:10px; margin-top:8px;">
+            <input type="number" id="posNumber" placeholder="Nº" style="width:80px;" />
+            <select id="posValue">
+              <option value="BAIXO">BAIXO</option>
+              <option value="CIMA">CIMA</option>
+            </select>
+            <button class="btn" id="btnSavePos">Salvar</button>
+          </div>
+        </div>
+
+        <div class="card locker-keys-card">
+          <h3>Cópias de Chaves</h3>
+          <div class="row" style="display:flex; gap:10px; margin-top:8px;">
+            <input type="number" id="keyNumber" placeholder="Nº" style="width:80px;" />
+            <input type="number" id="keyTotal" placeholder="Qtd" style="width:70px;" />
+            <button class="btn" id="btnSaveKeys">Salvar</button>
+            <button class="btn btn-ghost" id="btnAddCopy">+1</button>
+          </div>
+        </div>
+
+        <div class="card locker-maint-card">
+          <h3>🔧 Manutenção</h3>
+          <div class="row" style="display:flex; gap:10px; margin-top:8px;">
+            <input type="number" id="maintNumber" placeholder="Nº" style="width:70px;" />
+            <select id="maintStatus">
+              <option value="OK">OK</option>
+              <option value="MANUTENCAO">MANUTENÇÃO</option>
+            </select>
+            <input type="text" id="maintNote" placeholder="Obs..." style="flex:1; width:80px;" />
+            <button class="btn" id="btnSaveMaint">Salvar</button>
+            <button class="btn btn-ghost" id="btnClearMaint">Limpar</button>
+          </div>
+          <p class="muted small" id="maintHint" style="margin-top:8px"></p>
+        </div>
+      </div>
+      
+      <div class="row wrap" style="gap:10px; margin-top:10px; display:flex; align-items:center;">
+        <label class="inline" style="min-width:260px">
+          <span class="muted small">URL pública (opcional)</span>
+          <input id="qrBaseUrl" type="url" placeholder="https://seusite.com/index.html" style="width:260px" />
+        </label>
+        <label class="inline">
+          <span class="muted small">De</span>
+          <input id="qrFrom" type="number" min="1" placeholder="1" style="width:90px" />
+        </label>
+        <label class="inline">
+          <span class="muted small">Até</span>
+          <input id="qrTo" type="number" min="1" placeholder="50" style="width:90px" />
+        </label>
+        <button class="btn" id="btnGenQR">Gerar QRs</button>
+        <button class="btn btn-ghost" id="btnPrintQR">Imprimir</button>
+        <div class="muted small" id="qrHint" style="margin-left:auto"></div>
+      </div>
+
+      <div id="qrGrid" class="qr-grid" style="margin-top:12px"></div>
+
+      <div id="freeGrid" class="free-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px;"></div>
+    </section>
+
+    <!-- ABA 3: IMPORTAR / EXPORTAR -->
+    <section class="panel" id="tab-import">
+      <div class="panel-section">
+  <h3>Importar Colaboradores (Excel)</h3>
+  <input type="file" id="xlsxFile" accept=".xlsx" />
+  <button id="btnImportXlsx" class="btn">Importar .xlsx</button>
+</div>
+        <div class="card">
+          <h3>Exportar</h3>
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="btn" id="btnExportJson">Baixar JSON</button>
+            <button class="btn btn-ghost" id="btnExportXml">Baixar XML</button>
+          </div>
+        </div>
+        <div class="card danger">
+          <div class="row" style="margin-top:10px;">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABA 4: CONFIGURAÇÕES -->
+    <section class="panel" id="tab-config">
+      <div class="cards">
+        <div class="card">
+          <h3>Regra padrão Cima/Baixo</h3>
+          <div class="row" style="display:flex; gap:10px; margin-top:10px;">
+            <input type="number" id="splitInput" min="0" />
+            <select id="padraoAteInput" class="select">
+              <option value="BAIXO">Até X = BAIXO</option>
+              <option value="CIMA">Até X = CIMA</option>
+            </select>
+            <button class="btn" id="btnSaveSplit">Salvar</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Total de Armários</h3>
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <input type="number" id="totalInput" value="300" style="width:120px;" />
+            <button class="btn" id="btnSaveTotal">Atualizar</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Importar backup (JSON)</h3>
+          <input type="file" id="jsonFile" accept=".json,application/json" style="margin: 10px 0;" />
+          <div class="row">
+            <button class="btn" id="btnImportJson">Importar JSON</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABA 5: HISTÓRICO -->
+    <section class="panel" id="tab-history">
+      <div class="cards" style="margin-bottom: 20px;">
+        <div class="card">
+          <h3>🗝️ Controle rápido de chaves</h3>
+          <div class="form-grid" style="margin-top:10px">
+            <label><span>Armário</span><input id="keyEvtLocker" type="number" min="1" placeholder="Nº" /></label>
+            <label>
+              <span>Ação</span>
+              <select id="keyEvtType" class="select">
+                <option value="ENTREGOU">Entregou chave</option>
+                <option value="DEVOLVEU">Devolveu chave</option>
+                <option value="PERDEU">Perdeu chave</option>
+                <option value="COPIA_FEITA">Fiz cópia (+1)</option>
+              </select>
+            </label>
+            <label><span>Colaborador</span><select id="keyEvtEmp" class="select"><option value="">(selecione)</option></select></label>
+            <label><span>Data</span><input id="keyEvtDate" type="date" /></label>
+          </div>
+          <label style="display:block; margin-top:10px"><span>Observação</span><input id="keyEvtObs" placeholder="Ex.: entreguei 2ª via..." /></label>
+          <div class="row" style="margin-top:12px; display:flex; gap:10px;">
+            <button class="btn" id="btnKeyEvtSave">Registrar evento</button>
+            <button class="btn btn-ghost" id="btnKeyEvtClear">Limpar</button>
+          </div>
+        </div>
+
+        <div class="card" style="grid-column: 1 / -1">
+          <h3>📜 Histórico de chaves</h3>
+          <div class="row" style="display:flex; gap:10px;">
+            <input id="histFilter" type="search" placeholder="Filtrar por armário, matrícula..." />
+            <button class="btn btn-ghost" id="btnClearHist">Limpar filtro</button>
+          </div>
+          <div class="table-wrap" style="margin-top:12px">
+            <table class="grid" style="min-width: 980px">
+              <thead>
+                <tr>
+                  <th>Quando</th>
+                  <th>Tipo</th>
+                  <th>Armário</th>
+                  <th>Matrícula</th>
+                  <th>Nome</th>
+                  <th>Obs</th>
+                </tr>
+              </thead>
+              <tbody id="histBody"></tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div class="card danger">
+          <h3>📊 Relatório • Armários em risco (1 chave)</h3>
+          <div id="riskSummary" class="muted small" style="margin-bottom:8px"></div>
+          <div id="riskGrid" class="free-grid"></div>
+        </div>
+
+        <div class="card danger">
+          <h3>🔔 Alerta automático • 0 chaves disponíveis</h3>
+          <div id="zeroKeysSummary" class="muted small" style="margin-bottom:8px"></div>
+          <div id="zeroKeysGrid" class="free-grid"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- NOVA ABA: COLABORADORES SEM ARMÁRIO -->
+    <section class="panel" id="tab-no-locker">
+      <div class="toolbar">
+        <div class="search">
+          <h3 style="margin:0; color:var(--danger)">⚠️ Colaboradores Cadastrados Sem Armário</h3>
+          <p class="hint">Lista gerada automaticamente filtrando registros vazios ou não numéricos.</p>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btnPrintNoLockerReport" style="background:#fb7185; color:#0b1220;">🖨️ Imprimir Relatório Limpo</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="grid">
+          <thead>
+            <tr>
+              <th>Matrícula</th>
+              <th>Nome</th>
+              <th>Admissão</th>
+              <th>Cargo</th>
+              <th>Status</th>
             </tr>
           </thead>
           <tbody id="noLockerTbody">
-            </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <div id="tab-lockers" class="panel">
-    <div class="toolbar" style="align-items:center;">
-      <input type="text" id="lockerFilter" placeholder="Filtrar (ex: 42, 1-50, 2xx)" style="max-width:300px;" />
-      <select id="lockerStatus" style="max-width:200px;">
-        <option value="free">Livre</option>
-        <option value="used">Ocupado</option>
-        <option value="all">Todos</option>
-        <option value="manutencao">Em Manutenção</option>
-      </select>
-      <button class="btn" id="btnCopyFree">📋 Copiar visíveis</button>
-      <span class="mini" id="freeSummary" style="margin-left:auto;">...</span>
-    </div>
-
-    <div style="margin-bottom: 16px;">
-      <span class="tag maint" style="font-size: 14px; padding: 6px 12px; cursor: pointer;" onclick="document.getElementById('lockerStatus').value='manutencao'; document.getElementById('lockerStatus').dispatchEvent(new Event('change'));">
-        🔧 Armários em Manutenção: <span id="maintCount" style="font-weight: 800;">0</span>
-      </span>
-    </div>
-
-    <div class="grid" id="freeGrid"></div>
-  </div>
-
-  <div id="tab-history" class="panel">
-    <div class="panel-section" style="border-color: rgba(96,165,250,.3);">
-      <h3>Controle Rápido de Chaves (Eventos)</h3>
-      <p class="muted">Registre devoluções, perdas ou entregas de 2ª via (altera cópias e histórico).</p>
-      <div class="toolbar">
-        <select id="keyEvtType">
-          <option value="ENTREGOU">Entregar chave ao colaborador (1ª ou 2ª via)</option>
-          <option value="DEVOLVEU">Colaborador devolveu a chave</option>
-          <option value="PERDEU">Colaborador perdeu a chave (diminui o total)</option>
-          <option value="COPIA_FEITA">Fizemos uma nova cópia na loja (aumenta o total)</option>
-        </select>
-        <input type="number" id="keyEvtLocker" placeholder="Nº Armário" style="max-width:120px;">
-        <select id="keyEvtEmp">
-          <option value="">(selecione o colaborador)</option>
-        </select>
-      </div>
-      <div class="toolbar">
-        <input type="date" id="keyEvtDate" title="Data do evento">
-        <input type="text" id="keyEvtObs" placeholder="Observação (opcional)" style="flex:2;">
-        <button class="btn btn-primary" id="btnKeyEvtSave">Registrar Evento</button>
-        <button class="btn" id="btnKeyEvtClear">Limpar</button>
-      </div>
-    </div>
-
-    <div style="display:flex; gap:24px; flex-wrap:wrap;">
-      <div class="panel-section" style="flex:1; min-width:300px;">
-        <h3>🔔 Armários com chaves em Risco (Apenas 1 chave total)</h3>
-        <p class="muted" id="riskSummary">...</p>
-        <div class="grid" id="riskGrid" style="grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));"></div>
-      </div>
-      <div class="panel-section" style="flex:1; min-width:300px;">
-        <h3>🚨 Sem chave reserva (Disponível = 0)</h3>
-        <p class="muted" id="zeroKeysSummary">...</p>
-        <div class="grid" id="zeroKeysGrid" style="grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));"></div>
-      </div>
-    </div>
-
-    <div class="panel-section">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-        <h3>Histórico Geral (últimos 200)</h3>
-        <div style="display:flex; gap:8px;">
-          <input type="text" id="histFilter" placeholder="Filtrar histórico..." style="max-width:200px; padding:6px 12px;">
-          <button class="btn small" id="btnClearHist">Limpar</button>
-        </div>
-      </div>
-      <div style="overflow-x:auto; max-height:400px;">
-        <table>
-          <thead>
             <tr>
-              <th>Data/Hora</th>
-              <th>Tipo</th>
-              <th>Armário</th>
-              <th>Matrícula</th>
-              <th>Nome</th>
-              <th>Obs</th>
+              <td colspan="5" style="text-align:center; padding:20px;" class="muted">Carregando lista...</td>
             </tr>
-          </thead>
-          <tbody id="histBody"></tbody>
+          </tbody>
         </table>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
-  <div id="tab-import" class="panel">
-    
-    <div class="panel-section">
-      <h3>Importar Colaboradores (Excel)</h3>
-      <p class="muted">Faça o upload do arquivo Excel (.xlsx) contendo as colunas Cadastro, Nome, Admissao e Cargo. Se a matrícula já existir, os dados serão atualizados.</p>
-      <div style="display:flex; gap:12px; align-items:center;">
-        <input type="file" id="xlsxFile" accept=".xlsx" />
-        <button class="btn btn-primary" id="btnImportXlsx">Importar Excel</button>
+  <!-- MODAL DE CADASTRO / EDIÇÃO -->
+  <dialog id="modal" style="background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:12px; padding:20px; width:450px;">
+    <form method="dialog">
+      <h3 id="modalTitle" style="margin-top:0;">Editar Colaborador</h3>
+      <div class="form-grid" style="display:flex; flex-direction:column; gap:12px;">
+        <label>Matrícula: <input id="fCadastro" style="width:100%" required /></label>
+        <label>Nome: <input id="fNome" style="width:100%" required /></label>
+        <label>Admissão: <input id="fAdmissao" type="date" style="width:100%" /></label>
+        <label>Cargo: <input id="fCargo" style="width:100%" /></label>
+        <label>Armário: 
+          <select id="fArmario">
+            <option value="">(sem armário)</option>
+          </select>
+        </label>
+        <label>Chave entregue em: <input id="fChave" type="date" style="width:100%" /></label>
       </div>
-    </div>
-
-    <div class="panel-section">
-      <h3>Exportar (Backup Offline)</h3>
-      <p class="muted">Baixe o estado atual completo (JSON) ou apenas os dados em formato XML.</p>
-      <div style="display:flex; gap:12px;">
-        <button class="btn" id="btnExportJson">💾 Exportar JSON (Completo)</button>
-        <button class="btn" id="btnExportXml">📄 Exportar XML (Somente dados)</button>
-      </div>
-    </div>
-    
-    <div class="panel-section">
-      <h3>Importar JSON (Restauração Completa)</h3>
-      <p class="muted">Restaura um arquivo de backup JSON gerado anteriormente. <strong>Aviso:</strong> Substitui os dados correspondentes.</p>
-      <div style="display:flex; gap:12px; align-items:center;">
-        <input type="file" id="jsonFile" accept=".json" />
-        <button class="btn btn-danger" id="btnImportJson">Restaurar JSON</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="tab-config" class="panel">
-    <div class="panel-section">
-      <h3>Segurança Local (PIN Admin)</h3>
-      <p class="muted">Defina uma senha (PIN) para impedir que funcionários alterem as configurações caso usem o mesmo PC.</p>
-      <div style="display:flex; gap:12px; max-width:400px;">
-        <input type="password" id="adminPinConfig" placeholder="Novo PIN (ex: 1234)">
-        <button class="btn btn-primary" id="btnSaveAdminPin">Salvar PIN</button>
-        <button class="btn" id="btnClearAdminPin">Remover</button>
-      </div>
-    </div>
-
-    <div class="panel-section" style="display:flex; gap:24px; flex-wrap:wrap;">
-      <div style="flex:1; min-width:300px;">
-        <h3>Regras Gerais</h3>
-        <div class="form-group">
-          <label>Total de Armários Físicos na Loja</label>
-          <div style="display:flex; gap:8px;">
-            <input type="number" id="totalInput" min="1">
-            <button class="btn btn-primary" id="btnSaveTotal">Salvar</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Armário de corte (Divisão Cima/Baixo)</label>
-          <div class="muted" style="font-size:12px; margin-bottom:8px;">Ex: se 150, do 1 ao 150 será considerado "Baixo", e 151+ será "Cima".</div>
-          <div style="display:flex; gap:8px;">
-            <input type="number" id="splitInput" min="0">
-            <button class="btn btn-primary" id="btnSaveSplit">Salvar Regra</button>
-          </div>
-        </div>
-      </div>
-      
-      <div style="flex:1; min-width:300px;">
-        <h3>Ajuste Fino por Armário</h3>
-        <div class="form-group">
-          <label>Forçar posição de um armário (Exceção)</label>
-          <div style="display:flex; gap:8px;">
-            <input type="number" id="posNumber" placeholder="Nº">
-            <select id="posValue">
-              <option value="CIMA">Cima</option>
-              <option value="BAIXO">Baixo</option>
-            </select>
-            <button class="btn" id="btnSavePos">Aplicar</button>
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-top:24px;">
-          <label>Total de cópias (chaves) físicas existentes por armário</label>
-          <div class="muted" style="font-size:12px; margin-bottom:8px;">Por padrão todos têm 1 chave. Aumente se houver cópias extras no claviculário. Use 0 se o armário está sem chave/cadeado.</div>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <input type="number" id="keyNumber" placeholder="Nº">
-            <span>=</span>
-            <input type="number" id="keyTotal" placeholder="Total" min="0" max="99" style="max-width:80px;">
-            <button class="btn" id="btnSaveKeys">Aplicar</button>
-            <button class="btn btn-ghost" id="btnAddCopy" title="Aumenta em 1 o total de chaves do armário informado">+1 Cópia</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel-section">
-      <h3>🔧 Bloqueio / Manutenção de Armário</h3>
-      <p class="muted">Marque armários que estão com defeito, porta quebrada, sem miolo, etc., para que não apareçam como "Livres" na distribuição.</p>
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <input type="number" id="maintNumber" placeholder="Nº Armário" style="max-width:120px;">
-        <select id="maintStatus" style="max-width:160px;">
-          <option value="MANUTENCAO">Em Manutenção</option>
-          <option value="OK">Liberar (OK)</option>
-        </select>
-        <input type="text" id="maintNote" placeholder="Motivo (opcional)" style="flex:1; min-width:200px;">
-        <button class="btn btn-primary" id="btnSaveMaint">Salvar Manutenção</button>
-        <button class="btn btn-ghost" id="btnClearMaint">Limpar</button>
-      </div>
-      <div id="maintHint" class="mini" style="margin-top:8px;"></div>
-    </div>
-
-    <div class="panel-section">
-      <h3>Gerador de QR Code (Autoatendimento)</h3>
-      <p class="muted">Gere QRs para colar nos armários. O colaborador aponta a câmera, digita a matrícula e o armário já fica associado a ele no sistema.</p>
-      
-      <div class="form-group" style="max-width:600px;">
-        <label>URL Base Pública (Opcional)</label>
-        <div class="muted" style="font-size:12px; margin-bottom:8px;">
-          Se o Firebase Hosting estiver configurado, cole a URL pública aqui (ex: https://seusite.web.app). <br>
-          Se deixar em branco, o QR code usará a URL local (funciona apenas se todos usarem a mesma rede Wi-Fi).
-        </div>
-        <input type="text" id="qrBaseUrl" placeholder="https://..." />
-      </div>
-
-      <div style="display:flex; gap:12px; align-items:flex-end;">
-        <div style="max-width:100px;">
-          <label style="font-size:12px; color:var(--muted);">Do armário</label>
-          <input type="number" id="qrFrom" value="1" min="1">
-        </div>
-        <div style="max-width:100px;">
-          <label style="font-size:12px; color:var(--muted);">Até o</label>
-          <input type="number" id="qrTo" value="50" min="1">
-        </div>
-        <button class="btn btn-primary" id="btnGenQR">Gerar QRs</button>
-        <button class="btn" id="btnPrintQR">🖨️ Imprimir QRs</button>
-      </div>
-      <div class="mini" id="qrHint" style="margin-top:12px;"></div>
-
-      <div class="qr-grid" id="qrGrid"></div>
-    </div>
-  </div>
-
-  <dialog id="modal">
-    <h3 id="modalTitle" style="margin-top:0; color:var(--accent);">Colaborador</h3>
-    <form id="empForm">
-      <div class="form-group">
-        <label>Matrícula / Cadastro (Único)</label>
-        <input type="text" id="fCadastro" required>
-      </div>
-      <div class="form-group">
-        <label>Nome Completo</label>
-        <input type="text" id="fNome" required>
-      </div>
-      <div class="form-group" style="display:flex; gap:12px;">
-        <div style="flex:1;">
-          <label>Admissão</label>
-          <input type="date" id="fAdmissao">
-        </div>
-        <div style="flex:1;">
-          <label>Cargo</label>
-          <input type="text" id="fCargo">
-        </div>
-      </div>
-      
-      <div style="border-top: 1px solid var(--line); margin: 20px 0; padding-top: 16px;">
-        <div class="form-group">
-          <label>Armário Alocado (opcional)</label>
-          <select id="fArmario"></select>
-        </div>
-        <div class="form-group">
-          <label>Data de Entrega da Chave</label>
-          <div class="muted" style="font-size:11px; margin-bottom:6px;">Se preenchido, marca que o colaborador retirou uma chave física.</div>
-          <input type="date" id="fChave">
-        </div>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn" onclick="document.getElementById('modal').close()">Cancelar</button>
-        <button type="submit" class="btn btn-primary" id="btnSave">Salvar</button>
+      <div style="margin-top:15px; display:flex; justify-content:flex-end; gap:10px;">
+        <button class="btn btn-ghost" value="cancel">Cancelar</button>
+        <button class="btn" id="btnSave" value="default">Salvar</button>
       </div>
     </form>
   </dialog>
 
-  <dialog id="claimModal">
-    <h3 style="margin-top:0; color:var(--accent);">Associar Armário</h3>
-    <p class="muted">Confirme sua matrícula para associar este armário a você.</p>
-    <form id="claimForm">
-      <div class="form-group">
-        <label>Nº do Armário</label>
-        <input type="number" id="claimLocker" readonly style="font-weight:bold; font-size:18px;">
+  <!-- CLAIM MODAL -->
+  <dialog id="claimModal" class="modal">
+    <form method="dialog" class="modal-card" id="claimForm">
+      <div class="modal-head" style="display:flex; justify-content:space-between; margin-bottom:10px;">
+        <div>
+          <div class="modal-title" style="font-weight:bold; font-size:18px;">Confirmar armário</div>
+          <div class="muted small">Escaneado via QR do armário</div>
+        </div>
+        <button class="icon-btn" value="cancel" aria-label="Fechar" style="background:transparent; border:none; color:white; cursor:pointer;">✕</button>
       </div>
-      <div class="form-group">
-        <label>Sua Matrícula</label>
-        <input type="text" id="claimCadastro" required>
+
+      <div class="form-grid" style="margin-top:10px">
+        <label><span>Armário</span><input id="claimLocker" type="number" readonly /></label>
+        <label><span>Matrícula</span><input id="claimCadastro" type="text" inputmode="numeric" placeholder="Ex.: 26335" /></label>
+        <label style="grid-column: 1 / -1"><span>Nome (encontrado)</span><input id="claimNome" type="text" readonly placeholder="Digite a matrícula para carregar" /></label>
+        <label style="grid-column: 1 / -1; display:flex; gap:10px; align-items:center">
+          <input id="claimAgree" type="checkbox" />
+          <span class="small">Confirmo que este armário é meu.</span>
+        </label>
       </div>
-      <div class="form-group">
-        <label>Nome Confirmado</label>
-        <input type="text" id="claimNome" disabled style="opacity:0.7;">
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn" id="claimCancel">Cancelar</button>
-        <button type="submit" class="btn btn-primary" id="claimConfirm" disabled>Confirmar</button>
+
+      <div class="modal-actions" style="margin-top:12px; display:flex; justify-content:flex-end; gap:10px;">
+        <button class="btn btn-ghost" value="cancel" type="button" id="claimCancel">Cancelar</button>
+        <button class="btn" value="default" type="submit" id="claimConfirm" disabled>Confirmar</button>
       </div>
     </form>
   </dialog>
+
+  <div class="toast" id="toast"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  
   <script type="module" src="app.js"></script>
 
-  <script>
-    // Lógica para preencher o relatório da aba "Sem Armário"
+  <script type="module">
     document.addEventListener("DOMContentLoaded", () => {
-      const tabNoLocker = document.querySelector('[data-tab="no-locker"]');
+      const btnTabNoLocker = document.getElementById("btnTabNoLocker");
       const tabNoLockerSection = document.getElementById("tab-no-locker");
       const noLockerTbody = document.getElementById("noLockerTbody");
       const btnPrintNoLockerReport = document.getElementById("btnPrintNoLockerReport");
+      const pillBadge = document.getElementById("noLockerCount");
 
-      if (tabNoLocker) {
-        tabNoLocker.addEventListener("click", () => {
+      // CONTADOR GLOBAL: Atualiza a pílula lá no topo a cada 2 segundos
+      function atualizarContadorTopo() {
+        const originTbody = document.getElementById("tbody");
+        if (!originTbody) return;
+
+        const rows = originTbody.querySelectorAll("tr");
+        let countSemArmario = 0;
+
+        if (rows.length > 0) {
+          rows.forEach(row => {
+            const cells = row.querySelectorAll("td");
+            if (cells.length >= 5) {
+              const armario = cells[4].textContent.trim().toLowerCase();
+              const possuiNumero = /\d/.test(armario);
+              if (!possuiNumero || armario.includes("sem") || armario === "") {
+                countSemArmario++;
+              }
+            }
+          });
+        }
+
+        if (pillBadge) {
+          pillBadge.textContent = rows.length === 0 ? "..." : countSemArmario;
+        }
+      }
+
+      // Iniciar contador
+      setInterval(atualizarContadorTopo, 2000);
+      setTimeout(atualizarContadorTopo, 500); // Chamada rápida no início
+
+      if(btnTabNoLocker){
+        btnTabNoLocker.addEventListener("click", () => {
+          document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+          document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+          
+          btnTabNoLocker.classList.add("active");
+          tabNoLockerSection.classList.add("active");
+          
           gerarRelatorioSemArmario();
         });
       }
 
+      document.querySelectorAll(".tab:not(#btnTabNoLocker)").forEach(tab => {
+        tab.addEventListener("click", () => {
+          if(btnTabNoLocker) btnTabNoLocker.classList.remove("active");
+          if(tabNoLockerSection) tabNoLockerSection.classList.remove("active");
+        });
+      });
+
       function gerarRelatorioSemArmario() {
-        if (!window.state || !window.state.employees) return;
+        const originTbody = document.getElementById("tbody");
+        if (!originTbody) return;
+
+        const rows = originTbody.querySelectorAll("tr");
+        
+        if (rows.length === 0) {
+            noLockerTbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px;" class="muted">Aguardando dados...</td></tr>`;
+            return;
+        }
 
         noLockerTbody.innerHTML = "";
-        const cols = window.state.employees.slice().sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
         let encontrou = false;
 
-        cols.forEach(emp => {
-          if (emp.armario == null || emp.armario === "") {
-            encontrou = true;
-            const tr = document.createElement("tr");
-
-            // Matrícula
-            const tdMat = document.createElement("td");
-            tdMat.textContent = emp.cadastro;
-            tr.appendChild(tdMat);
-
-            // Nome
-            const tdNome = document.createElement("td");
-            tdNome.textContent = emp.nome;
-            tdNome.style.fontWeight = "600";
-            tr.appendChild(tdNome);
-
-            // Cargo
-            const tdCargo = document.createElement("td");
-            tdCargo.textContent = emp.cargo || "—";
-            tdCargo.classList.add("muted");
-            tr.appendChild(tdCargo);
-
-            // Admissão
-            const tdAdm = document.createElement("td");
-            if (emp.admissao) {
-              const [y, m, d] = String(emp.admissao).split("-");
-              tdAdm.textContent = (d && m && y) ? `${d}/${m}/${y}` : emp.admissao;
-            } else {
-              tdAdm.textContent = "—";
-            }
-            tr.appendChild(tdAdm);
-
-            // Ações (botão para resolver e dar um armário)
-            const tdAcao = document.createElement("td");
-            const btnResolver = document.createElement("button");
-            btnResolver.className = "btn btn-primary small";
-            btnResolver.textContent = "Dar Armário";
-            btnResolver.style.padding = "4px 8px";
-            btnResolver.style.fontSize = "12px";
+        rows.forEach(row => {
+          const cells = row.querySelectorAll("td");
+          if (cells.length >= 5) {
+            const matricula = cells[0].textContent.trim();
+            const nome = cells[1].textContent.trim();
+            const admissao = cells[2].textContent.trim();
+            const cargo = cells[3].textContent.trim();
             
-            // Ocultar o botão de ação quando for imprimir
-            btnResolver.classList.add("no-print");
+            const armario = cells[4].textContent.trim().toLowerCase();
+            const possuiNumero = /\d/.test(armario);
 
-            btnResolver.addEventListener("click", () => {
-              document.querySelector('[data-tab="colabs"]').click();
-              setTimeout(() => {
+            if (!possuiNumero || armario.includes("sem") || armario === "") {
+              encontrou = true;
+              const tr = document.createElement("tr");
+              
+              // Ajuste visual: transforma a linha em um link clicável (mãozinha)
+              tr.style.cursor = "pointer";
+              tr.title = "Clique para editar este colaborador";
+              
+              tr.innerHTML = `
+                <td><b>${matricula}</b></td>
+                <td style="color: #60a5fa; font-weight: 500; text-decoration: underline; text-underline-offset: 3px;">${nome}</td>
+                <td>${admissao || "-"}</td>
+                <td><span class="tag">${cargo || "-"}</span></td>
+                <td><span class="tag danger" style="background:rgba(251,113,133,.15); color:#fb7185; padding:2px 6px; border-radius:4px;">Sem Armário</span></td>
+              `;
+
+              // MÁGICA DO CLIQUE CORRIGIDA (Força filtro e abre modal sem precisar do espaço)
+              tr.addEventListener("click", () => {
+                // 1. Muda para a aba de colaboradores usando a função global do sistema
+                if (typeof switchTab === "function") {
+                  switchTab("colabs");
+                } else {
+                  const btnColabs = document.getElementById("btnTabColabs") || document.querySelector("[data-tab='colabs']");
+                  if (btnColabs) btnColabs.click();
+                }
+                
+                // 2. Coloca a matrícula no campo de busca e dispara o evento real de digitação
                 const searchInput = document.getElementById("searchInput");
                 if (searchInput) {
-                  searchInput.value = emp.cadastro;
-                  searchInput.dispatchEvent(new Event("input"));
+                  searchInput.value = matricula;
+                  // Cria e dispara o evento 'input' para o app.js filtrar a tabela sozinho
+                  searchInput.dispatchEvent(new Event('input', { bubbles: true }));
                 }
-                const row = document.getElementById("row-" + encodeURIComponent(emp.cadastro));
-                if (row) {
-                  row.classList.add("flash");
-                  row.scrollIntoView({ behavior: "smooth", block: "center" });
-                  const armBtn = row.querySelector(".cell-btn");
-                  if (armBtn) armBtn.click();
+                
+                // 3. Força a abertura do Modal chamando o objeto direto do array de estados
+                if (window.state && window.state.employees) {
+                  const emp = window.state.employees.find(e => e.cadastro === matricula);
+                  if (emp && typeof openModal === "function") {
+                    // Executa com um microdelay para a interface processar a mudança de aba primeiro
+                    setTimeout(() => {
+                      openModal(emp);
+                    }, 100);
+                  }
                 }
-              }, 100);
-            });
-            tdAcao.appendChild(btnResolver);
-            tr.appendChild(tdAcao);
+              });
 
-            if (noLockerTbody) {
               noLockerTbody.appendChild(tr);
             }
           }
@@ -824,6 +656,8 @@
         if (totalCards > 0) {
           const countManutencao = freeGrid.querySelectorAll(".free-item.manut").length;
           maintCountPill.textContent = countManutencao;
+        } else {
+          maintCountPill.textContent = "...";
         }
       }
     }, 2000);

@@ -23,10 +23,13 @@ const app = initializeApp(firebaseConfig);
 try { getAnalytics(app); } catch {}
 const db = getDatabase(app);
 
+// === SEGREDO PARA MULTI-LOJAS E QR CODE ===
 const urlParamsApp = new URLSearchParams(window.location.search);
+// Puxa a loja do QR code ou, se não tiver QR, puxa do Login
 const lojaAtual = urlParamsApp.get('loja') || localStorage.getItem('loja_armarios') || "005-LRVCEN";
 const basePath = "lojas/" + lojaAtual;
 
+// ===== Helpers/UI =====
 const el = (id) => document.getElementById(id);
 
 const tabs = Array.from(document.querySelectorAll(".tab"));
@@ -310,6 +313,7 @@ function startRealtime(){
     console.warn("Erro Firebase (historicoChaves):", err);
   });
 
+  // LER COLABORADORES DA LOJA LOGADA
   onValue(ref(db, basePath + "/employees"), (snap) => {
     const v = snap.val();
     const arr = [];
@@ -471,6 +475,7 @@ const claimOnly = el("claimOnly");
 const claimOnlyLocker = el("claimOnlyLocker");
 const claimOnlyCadastro = el("claimOnlyCadastro");
 const claimOnlyNome = el("claimOnlyNome");
+const claimOnlyAgree = el("claimOnlyAgree");
 const claimOnlyConfirm = el("claimOnlyConfirm");
 const claimOnlyMsg = el("claimOnlyMsg");
 
@@ -478,6 +483,7 @@ const claimForm = el("claimForm");
 const claimLockerInput = el("claimLocker");
 const claimCadastro = el("claimCadastro");
 const claimNome = el("claimNome");
+const claimAgree = el("claimAgree");
 const claimConfirm = el("claimConfirm");
 const claimCancel = el("claimCancel");
 
@@ -491,6 +497,7 @@ const qrBaseUrl = el("qrBaseUrl");
 
 let pendingClaimLocker = null;
 
+// GERAÇÃO DE URLS COM A LOJA EMBUTIDA
 function buildLockerClaimUrl(n){
   const base = (state.publicBaseUrl || localStorage.getItem("publicBaseUrl") || "").trim();
   try{
@@ -521,6 +528,7 @@ function openClaimModal(lockerNumber){
   claimLockerInput.value = String(n);
   claimCadastro.value = "";
   claimNome.value = "";
+  claimAgree.checked = false;
   claimConfirm.disabled = true;
 
   if(!claimModal.open) claimModal.showModal();
@@ -531,8 +539,7 @@ function refreshClaimUI(){
   const cad = String(claimCadastro.value ?? "").trim();
   const emp = state.employees.find(e => String(e.cadastro) === cad);
   claimNome.value = emp ? emp.nome : "";
-  // Libera o botão apenas se o colaborador for encontrado (Sem checkbox)
-  claimConfirm.disabled = !emp;
+  claimConfirm.disabled = !(emp && claimAgree.checked);
 }
 
 function setClaimMode(on){
@@ -547,6 +554,7 @@ function openClaimOnly(lockerNumber){
   if(el("claimOnlyLockerDisplay")) el("claimOnlyLockerDisplay").textContent = String(n);
   if(claimOnlyCadastro) claimOnlyCadastro.value = "";
   if(claimOnlyNome) claimOnlyNome.value = "";
+  if(claimOnlyAgree) claimOnlyAgree.checked = false;
   if(claimOnlyConfirm) claimOnlyConfirm.disabled = true;
   if(claimOnlyMsg) claimOnlyMsg.textContent = "";
   if(claimOnlyCadastro) setTimeout(()=>claimOnlyCadastro.focus(), 50);
@@ -558,8 +566,7 @@ function refreshClaimOnlyUI(){
   if(claimOnlyNome) claimOnlyNome.value = emp ? emp.nome : "Matrícula não encontrada...";
   
   if(claimOnlyConfirm) {
-     // Libera o botão apenas se o colaborador for encontrado (Sem checkbox)
-     if(emp){
+     if(emp && claimOnlyAgree.checked){
          claimOnlyConfirm.disabled = false;
      } else {
          claimOnlyConfirm.disabled = true;
@@ -568,6 +575,7 @@ function refreshClaimOnlyUI(){
 }
 
 claimOnlyCadastro?.addEventListener("input", refreshClaimOnlyUI);
+claimOnlyAgree?.addEventListener("change", refreshClaimOnlyUI);
 
 claimOnlyConfirm?.addEventListener("click", async ()=>{
   try{
@@ -588,6 +596,7 @@ claimOnlyConfirm?.addEventListener("click", async ()=>{
 });
 
 claimCadastro?.addEventListener("input", refreshClaimUI);
+claimAgree?.addEventListener("change", refreshClaimUI);
 claimCancel?.addEventListener("click", ()=> claimModal.close());
 
 async function selfAssignLocker(cadastro, lockerNumber){
