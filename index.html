@@ -1,42 +1,28 @@
-﻿<!doctype html>
-<html lang="pt-BR">
-<head>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script>
-  // Agora só deixa entrar se tiver SESSÃO ATIVA (digitou a senha hoje) e loja.
-  if (!sessionStorage.getItem('sessao_ativa') || !localStorage.getItem('loja_armarios')) {
-    window.location.href = 'login.html';
-  }
-</script>
+﻿<head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Armários • Colaboradores</title>
-  <link rel="stylesheet" href="styles.css" />
-
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
   <script>
-    (function(){
-      try{
-        var p = new URLSearchParams(location.search);
-        if(p.get('claim') === '1') document.documentElement.classList.add('claim-mode');
-      }catch(e){}
-    })();
-  </script>
-<script>
-  // SISTEMA DE SEGURANÇA INTELIGENTE (COM LEITURA DE QR CODE)
-  const params = new URLSearchParams(window.location.search);
-  const isClaim = params.get('claim') === '1';
-  const lojaQr = params.get('loja');
+    // SISTEMA DE SEGURANÇA INTELIGENTE (COM LEITURA DE QR CODE)
+    const params = new URLSearchParams(window.location.search);
+    const isClaim = params.get('claim') === '1';
+    const lojaQr = params.get('loja');
 
-  if (isClaim && lojaQr) {
-    // Se o funcionário está lendo via QR Code, libera o acesso direto para a loja do QR Code!
-    localStorage.setItem('loja_armarios', lojaQr);
-  } else {
-    // Se for o administrador abrindo o painel normal, exige login e senha!
-    if (!sessionStorage.getItem('sessao_ativa') || !localStorage.getItem('loja_armarios')) {
-      window.location.href = 'login.html';
+    if (isClaim && lojaQr) {
+      // Se o funcionário está lendo via QR Code, libera o acesso direto para a loja!
+      localStorage.setItem('loja_armarios', lojaQr);
+      document.documentElement.classList.add('claim-mode');
+    } else {
+      // Se for o administrador abrindo o link normal, exige login e senha!
+      if (!sessionStorage.getItem('sessao_ativa') || !localStorage.getItem('loja_armarios')) {
+        window.location.href = 'login.html';
+      }
     }
-  }
-</script>
+  </script>
+  <link rel="stylesheet" href="styles.css" />
   <style>
     /* Estilos para o relatório de funcionários sem armário e tela de impressão gráfica */
     @media print {
