@@ -560,19 +560,74 @@ function openClaimOnly(lockerNumber){
   if(claimOnlyCadastro) setTimeout(()=>claimOnlyCadastro.focus(), 50);
 }
 
+// [MANTENHA TODO O SEU CÓDIGO ORIGINAL ATÉ A FUNÇÃO REFRESH]
+
 function refreshClaimOnlyUI(){
   const cad = String(claimOnlyCadastro?.value ?? "").trim();
-  const emp = state.employees.find(e => String(e.cadastro) === cad);
-  if(claimOnlyNome) claimOnlyNome.value = emp ? emp.nome : "Matrícula não encontrada...";
-  
-  if(claimOnlyConfirm) {
-     if(emp && claimOnlyAgree.checked){
-         claimOnlyConfirm.disabled = false;
-     } else {
-         claimOnlyConfirm.disabled = true;
-     }
+  const targetLocker = Number(claimOnlyLocker?.value);
+  const msgEl = el("claimOnlyMsg");
+
+  // Limpa mensagens
+  if(msgEl) {
+     msgEl.textContent = "";
+     msgEl.style.color = "var(--text)";
   }
+
+  // Se vazio, trava o botão
+  if(!cad) {
+    if(claimOnlyNome) claimOnlyNome.value = "";
+    if(claimOnlyConfirm) claimOnlyConfirm.disabled = true;
+    return;
+  }
+
+  const emp = state.employees.find(e => String(e.cadastro) === cad);
+
+  // Se não existe
+  if(!emp){
+    if(claimOnlyNome) claimOnlyNome.value = "Matrícula não encontrada...";
+    if(claimOnlyConfirm) claimOnlyConfirm.disabled = true;
+    return;
+  }
+
+  if(claimOnlyNome) claimOnlyNome.value = emp.nome;
+
+  // 1. VERIFICAÇÃO: Armário já pertence a OUTRA pessoa
+  const occupier = state.employees.find(e => Number(e.armario) === targetLocker && String(e.cadastro) !== cad);
+  if (occupier) {
+     if(msgEl) {
+         msgEl.style.color = "var(--danger)";
+         msgEl.textContent = "❌ Este armário já está ocupado por outra pessoa.";
+     }
+     if(claimOnlyConfirm) claimOnlyConfirm.disabled = true;
+     return;
+  }
+
+  // 2. VERIFICAÇÃO: Ele já é o dono deste armário
+  if (Number(emp.armario) === targetLocker) {
+     if(msgEl) {
+         msgEl.style.color = "var(--ok)";
+         msgEl.textContent = "✅ Este já é o seu armário.";
+     }
+     if(claimOnlyConfirm) claimOnlyConfirm.disabled = true;
+     return;
+  }
+
+  // 3. VERIFICAÇÃO: Ele tem outro armário (Pergunta se deseja trocar)
+  if (emp.armario && Number(emp.armario) !== targetLocker) {
+     if(msgEl) {
+         msgEl.style.color = "#fcd34d"; // Amarelo (Aviso)
+         msgEl.textContent = `⚠️ Seu armário atual é o ${emp.armario}. Deseja trocar para o ${targetLocker}?`;
+     }
+     // Libera o botão para ele trocar de armário!
+     if(claimOnlyConfirm) claimOnlyConfirm.disabled = false;
+     return;
+  }
+
+  // 4. Se chegou aqui, está tudo certo e livre
+  if(claimOnlyConfirm) claimOnlyConfirm.disabled = false;
 }
+
+// [O RESTANTE DO SEU CÓDIGO ORIGINAL SEGUE ABAIXO]
 
 claimOnlyCadastro?.addEventListener("input", refreshClaimOnlyUI);
 claimOnlyAgree?.addEventListener("change", refreshClaimOnlyUI);
