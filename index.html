@@ -24,6 +24,14 @@
   </script>
   <link rel="stylesheet" href="styles.css" />
   <style>
+    /* Estilos para ocultar painel administrativo no modo QR */
+    html.claim-mode body .admin-only,
+    html.claim-mode body .tabs,
+    html.claim-mode body .panel,
+    html.claim-mode body .topbar,
+    html.claim-mode body .toast,
+    html.claim-mode body .stats, 
+    html.claim-mode body dialog { display:none !important; } 
     /* Estilos para o relatório de funcionários sem armário e tela de impressão gráfica */
     @media print {
       body.print-no-lockers-mode {
